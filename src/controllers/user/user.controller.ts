@@ -2,6 +2,12 @@ import { IUser } from "../../models/user/user.model";
 import * as userService from "../../services/user/user.service";
 import { Request, Response } from "express";
 
+export interface LoginRequestBody {
+  phoneNumber: string;
+  countryCode?: string;
+  deviceToken?: string;
+}
+
 export const registerUser = async (req: Request, res: Response) => {
   try {
     const { countryCode, phoneNumber } = req.body;
@@ -29,50 +35,35 @@ export const registerUser = async (req: Request, res: Response) => {
 };
 
 export const loginRegisterUser = async (
-  req: Request,
+  req: Request<unknown, unknown, LoginRequestBody>,
   res: Response,
-): Promise<Response> => {
+) => {
   try {
-    const { countryCode, phoneNumber } = req.body;
+    const { phoneNumber } = req.body;
 
-    if (!countryCode || !phoneNumber) {
+    if (!phoneNumber) {
       return res.status(400).json({
-        success: false,
-        message: "Country code and phone number are required.",
+        status: false,
+        message: "Phone number is required",
       });
     }
 
-    const user: IUser | null = await userService.loginUser(
-      countryCode,
-      phoneNumber,
-    );
-
-    if (!user) {
-      const newUser: IUser = await userService.createUser(
-        countryCode,
-        phoneNumber,
-      );
-
-      return res.status(201).json({
-        success: true,
-        message: "OTP sent for verification.",
-        userId: newUser._id,
-      });
-    }
+    const result = await userService.loginService(req.body);
 
     return res.status(200).json({
-      success: true,
-      message: "OTP sent for login.",
-      userId: user._id,
+      status: true,
+      message: "OTP sent successfully",
+      data: {
+        userId: result.user._id.toString(),
+        otp: result.otp, // only in development
+      },
     });
-  } catch (err) {
-    const errorMessage =
-      err instanceof Error ? err.message : "Unknown error occurred";
+  } catch (error: unknown) {
+    console.error("Login Error:", error);
 
     return res.status(500).json({
-      success: false,
-      message: "Internal server error.",
-      error: errorMessage,
+      status: false,
+      message: error instanceof Error ? error.message : "Internal server error",
     });
   }
 };

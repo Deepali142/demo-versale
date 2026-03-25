@@ -15,12 +15,10 @@ export const resendOtp = async (req: Request, res: Response) => {
     await otpService.createOtp(String(user._id), user.phoneNumber ?? "");
     res.json({ success: true, message: "OTP resent successfully" });
   } catch (err: unknown) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-      });
+    res.status(400).json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 };
 
@@ -57,7 +55,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
     );
 
     //  Save refreshToken in DB
-    user.refreshToken = refreshToken;
+    // user.refreshToken = refreshToken;
     // user.status = "active";
     await user.save();
 
@@ -71,16 +69,15 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: "OTP verified, admin activated",
+      message: "OTP verified, user activated",
       accessToken,
       refreshToken,
+      user,
     });
   } catch (err: unknown) {
-    res
-      .status(400)
-      .json({
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-      });
+    res.status(400).json({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 };

@@ -7,13 +7,14 @@ export interface IUser extends Document {
   phoneNumber: string;
   countryCode: string;
   otp?: number;
-  otpExpiryTime?: string;
-  refreshToken?: string | undefined;
+  otpExpiryTime?: number;
+  refreshToken?: string | undefined | null;
   isOtpVerify?: number;
   loyaltyPoints?: number;
   deviceToken?: string;
   email?: string;
   createdAt?: Date;
+  _id: mongoose.Types.ObjectId;
   updatedAt?: Date;
 }
 

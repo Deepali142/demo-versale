@@ -1,7 +1,6 @@
 import UserOtp from "../../models/user/otp.model";
-import { generateOTP } from "../../utils/generateotp";
-import { sendOtpSms } from "../../utils/sendotp";
 import User from "../../models/user/user.model";
+import { generateRandom4Digit, sendOTPSMS } from "../../utils/common";
 
 export const createOtp = async (
   userId: string,
@@ -15,14 +14,20 @@ export const createOtp = async (
   // remove any existing OTPs for this user (handles resend too)
   await UserOtp.deleteMany({ userId });
 
-  // generate new OTP
-  const code = generateOTP();
+  const isDevelopment = process.env.NODE_ENV === "development";
+  const isDemoNumber = phoneNumber === process.env.PHONE_NUMBER;
+
+  const code: string =
+    isDevelopment || isDemoNumber
+      ? (process.env.DEMO_OTP ?? "1111")
+      : generateRandom4Digit().toString();
 
   // save OTP in DB
   await UserOtp.create({ userId: userId, otp: code });
 
-  // send via Twilio
-  await sendOtpSms(phoneNumber, code);
+  if (!isDevelopment && !isDemoNumber) {
+    await sendOTPSMS(phoneNumber, code);
+  }
 
   console.log(`OTP for userId ${userId}: ${code}`);
   return code;

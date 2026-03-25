@@ -14,6 +14,12 @@ interface UserListParams {
   endDate?: string;
 }
 
+export interface LoginRequestBody {
+  phoneNumber: string;
+  countryCode?: string;
+  deviceToken?: string;
+}
+
 export const createUser = async (countryCode: string, phoneNumber: string) => {
   phoneNumber = phoneNumber.trim();
 
@@ -40,19 +46,36 @@ export const createUser = async (countryCode: string, phoneNumber: string) => {
   return newUser;
 };
 
-export const loginUser = async (countryCode: string, phoneNumber: string) => {
-  phoneNumber = phoneNumber.trim();
+export const loginService = async (body: LoginRequestBody) => {
+  const { phoneNumber, deviceToken } = body;
+  let { countryCode } = body;
 
-  const user = await User.findOne({ countryCode, phoneNumber });
-  if (!user) throw new Error("user not found");
+  countryCode ??= "+91";
 
-  const fullPhone = user.countryCode?.startsWith("+")
-    ? `${user.countryCode}${user.phoneNumber}`
-    : `+${user.countryCode}${user.phoneNumber}`;
+  let user: IUser | null = await User.findOne({
+    phoneNumber,
+    countryCode,
+  });
 
-  await otpService.createOtp(String(user._id), fullPhone);
+  if (!user) {
+    user = await User.create({
+      phoneNumber,
+      countryCode,
+      ...(deviceToken !== undefined && { deviceToken }),
+    });
+  }
 
-  return user;
+  if (deviceToken !== undefined) {
+    user.deviceToken = deviceToken;
+    await user.save();
+  }
+
+  const otp = await otpService.createOtp(user._id.toString(), phoneNumber);
+
+  return {
+    user,
+    otp: process.env.NODE_ENV === "development" ? otp : undefined,
+  };
 };
 
 // GET USER BY ID
