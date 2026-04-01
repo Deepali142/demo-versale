@@ -12,33 +12,39 @@ import {
 const validAppTypes = ["USER", "TECHNICIAN"] as const;
 type AppType = (typeof validAppTypes)[number];
 
-const validSections = ["QUICK_SERVICES", "BOOKING", "OTHER"] as const;
+const validSections = ["QUICK_SERVICES", "BOOKING", "OTHER", "REQUEST" , "UTILITIES"] as const;
 type Section = (typeof validSections)[number];
 
 const validActionTypes = ["NAVIGATE", "API"] as const;
 type ActionType = (typeof validActionTypes)[number];
 
 // --------------------
+// HELPERS
+// --------------------
+const isValidEnum = <T>(value: any, validArray: readonly T[]): value is T => {
+  return validArray.includes(value);
+};
+
+// --------------------
 // GET
 // --------------------
 export const getDashboardItems = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
-    const { appType } = req.query as { appType?: string };
+    const { appType } = req.query;
 
     let typedAppType: AppType | undefined;
 
     if (appType) {
-      if (!validAppTypes.includes(appType as AppType)) {
+      if (!isValidEnum(appType, validAppTypes)) {
         return res.status(400).json({
           success: false,
           message: "Invalid appType",
         });
       }
-
-      typedAppType = appType as AppType;
+      typedAppType = appType;
     }
 
     const data = await getDashboardItemsService({
@@ -63,7 +69,7 @@ export const getDashboardItems = async (
 // --------------------
 export const createDashboardItem = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
     const {
@@ -75,18 +81,11 @@ export const createDashboardItem = async (
       position,
       actionType,
       actionValue,
-    } = req.body as {
-      name?: string;
-      iconUrl?: string;
-      appType?: string;
-      section?: string;
-      sectionTitle?: string;
-      position?: number;
-      actionType?: string;
-      actionValue?: string;
-    };
+      screen,
+      serviceId,
+      parentId,
+    } = req.body;
 
-    // Required validation
     if (!name || !iconUrl || !appType || !section || position === undefined) {
       return res.status(400).json({
         success: false,
@@ -94,34 +93,63 @@ export const createDashboardItem = async (
       });
     }
 
-    // Validate enums
-    if (!validAppTypes.includes(appType as AppType)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid appType" });
+    if (!isValidEnum(appType, validAppTypes)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appType",
+      });
     }
 
-    if (!validSections.includes(section as Section)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid section" });
+    if (!isValidEnum(section, validSections)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid section",
+      });
     }
 
-    if (actionType && !validActionTypes.includes(actionType as ActionType)) {
+    if (actionType && !isValidEnum(actionType, validActionTypes)) {
       return res.status(400).json({
         success: false,
         message: "Invalid actionType",
       });
     }
 
+    if (!actionType && !serviceId) {
+      return res.status(400).json({
+        success: false,
+        message: "Either actionType or serviceId is required",
+      });
+    }
+
+    if (actionType === "SERVICE" && !serviceId) {
+      return res.status(400).json({
+        success: false,
+        message: "serviceId is required when actionType is SERVICE",
+      });
+    }
+
+    if (
+      (actionType === "NAVIGATE" || actionType === "API") &&
+      !actionValue
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "actionValue is required for NAVIGATE or API",
+      });
+    }
+
     const result = await createDashboardItemService({
       name,
       iconUrl,
-      appType: appType as AppType,
-      section: section as Section,
+      appType,
+      section,
       position,
+
+      ...(screen && { screen }),
       ...(sectionTitle && { sectionTitle }),
-      ...(actionType && { actionType: actionType as ActionType }),
+      ...(parentId && { parentId }),
+      ...(serviceId && { serviceId }),
+      ...(actionType && { actionType }),
       ...(actionValue && { actionValue }),
     });
 
@@ -143,7 +171,7 @@ export const createDashboardItem = async (
 // --------------------
 export const updateDashboardItem = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
     const { id } = req.params;
@@ -165,51 +193,66 @@ export const updateDashboardItem = async (
       actionType,
       actionValue,
       isActive,
-    } = req.body as {
-      name?: string;
-      iconUrl?: string;
-      section?: string;
-      sectionTitle?: string;
-      appType?: string;
-      position?: number;
-      actionType?: string;
-      actionValue?: string;
-      isActive?: boolean;
-    };
+      screen,
+      serviceId,
+      parentId,
+    } = req.body;
 
-    // Validate enums (only if provided)
-    if (appType && !validAppTypes.includes(appType as AppType)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid appType" });
+    if (appType && !isValidEnum(appType, validAppTypes)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid appType",
+      });
     }
 
-    if (section && !validSections.includes(section as Section)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid section" });
+    if (section && !isValidEnum(section, validSections)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid section",
+      });
     }
 
-    if (actionType && !validActionTypes.includes(actionType as ActionType)) {
+    if (actionType && !isValidEnum(actionType, validActionTypes)) {
       return res.status(400).json({
         success: false,
         message: "Invalid actionType",
       });
     }
 
-    const payload = {
+    if (actionType === "SERVICE" && !serviceId) {
+      return res.status(400).json({
+        success: false,
+        message: "serviceId is required when actionType is SERVICE",
+      });
+    }
+
+    if (
+      (actionType === "NAVIGATE" || actionType === "API") &&
+      !actionValue
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "actionValue is required for NAVIGATE or API",
+      });
+    }
+
+    const payload: Record<string, unknown> = {
       ...(name && { name }),
       ...(iconUrl && { iconUrl }),
-      ...(section && { section: section as Section }),
+      ...(section && { section }),
       ...(sectionTitle && { sectionTitle }),
-      ...(appType && { appType: appType as AppType }),
+      ...(appType && { appType }),
       ...(position !== undefined && { position }),
-      ...(actionType && { actionType: actionType as ActionType }),
+      ...(actionType && { actionType }),
       ...(actionValue && { actionValue }),
       ...(isActive !== undefined && { isActive }),
+
+      ...(screen && { screen }),
+      ...(serviceId && { serviceId }),
+      ...(parentId && { parentId }),
     };
 
-    if (Object.keys(payload).length === 0) {
+    if (!Object.keys(payload).length) {
       return res.status(400).json({
         success: false,
         message: "No fields to update",
@@ -243,7 +286,7 @@ export const updateDashboardItem = async (
 // --------------------
 export const deleteDashboardItem = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
     const { id } = req.params;

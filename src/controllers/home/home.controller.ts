@@ -7,9 +7,16 @@ import { getHomeScreenService } from "../../services/home/home.service";
 const validTypes = ["USER", "TECHNICIAN"] as const;
 type AppType = (typeof validTypes)[number];
 
+const validScreens = ["HOME", "STERILIZATION"] as const;
+type Screen = (typeof validScreens)[number];
+
 // Type Guard (BEST PRACTICE)
 const isValidAppType = (type: unknown): type is AppType => {
   return typeof type === "string" && validTypes.includes(type as AppType);
+};
+
+const isValidScreen = (screen: unknown): screen is Screen => {
+  return typeof screen === "string" && validScreens.includes(screen as Screen);
 };
 
 // --------------------
@@ -20,9 +27,11 @@ export const getHomeScreen = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const { type } = req.query;
+    const { type, screen } = req.query as {
+      type?: string;
+      screen?: string;
+    };
 
-    // Validate presence
     if (!type) {
       return res.status(400).json({
         success: false,
@@ -30,7 +39,6 @@ export const getHomeScreen = async (
       });
     }
 
-    // Validate type safely
     if (!isValidAppType(type)) {
       return res.status(400).json({
         success: false,
@@ -38,8 +46,23 @@ export const getHomeScreen = async (
       });
     }
 
-    // Now TS knows it's AppType ✅
-    const data = await getHomeScreenService(type);
+    let validScreen: Screen | undefined;
+
+    if (screen) {
+      if (!isValidScreen(screen)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid screen",
+        });
+      }
+      validScreen = screen as Screen;
+    }
+
+    // ✅ Call service with proper types
+    const data = await getHomeScreenService(
+      type as AppType,
+      validScreen,
+    );
 
     return res.status(200).json({
       success: true,

@@ -1,111 +1,192 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { IAddress } from "../user/address.model";
-
-export interface IServiceDetail {
-  service_id: mongoose.Types.ObjectId;
-  serviceType?: string;
-  quantity: string;
-  acType?: string;
-  place?: string;
-  otherService?: string;
-  comment?: string;
-  services?: string[];
-}
-
-export interface IOrderItem {
-  item: string;
-  quantity: string;
-  price: mongoose.Types.Decimal128;
-}
-
-export interface IBooking extends Document {
-  user_id: mongoose.Types.ObjectId;
-  bookingId: string;
-  invoiceId?: string;
-  serviceDetails: IServiceDetail[] | unknown[];
-  addressDetails: IAddress[];
-  couponDetails?: object;
-  slot: "FIRST_HALF" | "SECOND_HALF";
-  date: Date;
-  status:
-    | "BOOKED"
-    | "ASSIGNMENT_PENDING"
-    | "TECHNICIAN_ASSIGNED"
-    | "PAYMENT_PENDING"
-    | "PAID"
-    | "IN_PROGRESS"
-    | "COMPLETE"
-    | "CANCELLED";
-  amount: mongoose.Types.Decimal128;
-  order_id?: string;
-  assigned_to?: mongoose.Types.ObjectId;
-  orderItems?: IOrderItem[];
-  originalTotal?: string;
-  isCouponApply?: string;
-  discountAmount?: string;
-  discountedTotal?: string;
-  discount?: string;
-  invoiceUrl?: string;
-}
+import { Schema, model, Types } from "mongoose";
+import { IBooking } from "../../types/booking.types";
 
 const bookingSchema = new Schema<IBooking>(
   {
-    user_id: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    bookingId: { type: String },
-    invoiceId: { type: String },
-    serviceDetails: [
-      {
-        service_id: {
-          type: Schema.Types.ObjectId,
-          ref: "Service",
-          required: true,
-        },
-        serviceType: String,
-        quantity: String,
-        acType: { type: String, default: "" },
-        place: { type: String, default: "" },
-        otherService: { type: String, default: "" },
-        comment: { type: String, default: "" },
-        services: [],
-      },
-    ],
-    addressDetails: [{}],
-    couponDetails: {},
-    slot: { type: String, enum: ["FIRST_HALF", "SECOND_HALF"], required: true },
-    date: { type: Date, required: true },
-    status: {
-      type: String,
-      enum: [
-        "BOOKED",
-        "ASSIGNMENT_PENDING",
-        "TECHNICIAN_ASSIGNED",
-        "PAYMENT_PENDING",
-        "PAID",
-        "IN_PROGRESS",
-        "COMPLETE",
-        "CANCELLED",
-      ],
-      default: "BOOKED",
+    user_id: {
+      type: Schema.Types.ObjectId,
       required: true,
     },
-    amount: { type: Schema.Types.Decimal128, required: true },
-    order_id: { type: String, default: "" },
-    assigned_to: { type: Schema.Types.ObjectId, ref: "Technician" },
-    orderItems: [
+
+    bookingId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+
+    // SERVICES
+    services: [
       {
-        item: String,
-        quantity: String,
-        price: Schema.Types.Decimal128,
+        category: {
+          type: String,
+          enum: ["AC", "Boiler", "Heat Pump"],
+          required: true,
+        },
+
+        items: [
+          {
+            serviceId: {
+              type: Types.ObjectId,
+                ref: "Service",
+
+            },
+
+            name: {
+              type: String,
+              required: true,
+            },
+
+            // Service Type (NEW)
+            serviceType: {
+              type: String,
+              enum: ["Sterilization", "Repair", "Installation"],
+              required: true,
+            },
+
+            quantity: {
+              type: Number,
+              required: true,
+              default: 1,
+              min: 1,
+            },
+
+            unitPrice: {
+              type: Schema.Types.Decimal128,
+              required: true,
+              default: 0,
+            },
+
+            totalPrice: {
+              type: Schema.Types.Decimal128,
+              required: true,
+              default: 0,
+            },
+
+            // Flexible attributes
+            attributes: {
+              type: {
+                type: String, // AC / Boiler / Heat Pump
+                required: true,
+              },
+              subType: {
+                type: String, // Split / Window / Combi / Air Source
+              },
+              variant: {
+                type: String, // Wall Mount / Floor Mount / Central
+              },
+            },
+          },
+        ],
       },
     ],
-    originalTotal: { type: String, default: "" },
-    isCouponApply: { type: String, default: "2" },
-    discountAmount: { type: String, default: "" },
-    discountedTotal: { type: String, default: "" },
-    discount: { type: String, default: "" },
-    invoiceUrl: { type: String },
+
+    // ADDRESS
+    address: {
+      type: Object,
+      required: true,
+    },
+
+    // SLOT
+    slot: {
+      type: String,
+      enum: ["FIRST_HALF", "SECOND_HALF", "FULL_DAY"],
+      required: true,
+    },
+
+    date: {
+      type: Date,
+      required: true,
+    },
+
+    // PRICING
+    itemTotal: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+    },
+
+    discount: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+    },
+
+    // 🇬🇧 VAT (UK TAX)
+    tax: {
+      vatRate: {
+        type: Number,
+        default: 20,
+      },
+      vatAmount: {
+        type: Schema.Types.Decimal128,
+        default: 0,
+      },
+    },
+
+    grandTotal: {
+      type: Schema.Types.Decimal128,
+      default: 0,
+    },
+
+    currency: {
+      type: String,
+      default: "GBP",
+    },
+
+    // ORDER
+    order_id: {
+      type: String,
+    },
+
+    enquiryId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+    },
+
+    //  STATUS
+    status: {
+      type: String,
+      enum: ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"],
+      default: "PENDING",
+    },
+
+    // TECHNICIAN
+    assigned_to: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+
+    // INVOICE
+    invoiceUrl: String,
+    invoiceId: String,
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export const Booking = mongoose.model<IBooking>("Booking", bookingSchema);
+bookingSchema.pre("save", function (next) {
+  let itemTotal = 0;
+
+  this.services.forEach((service: any) => {
+    service.items.forEach((item: any) => {
+      const qty = Number(item.quantity);
+      const price = Number(item.unitPrice);
+
+      const total = qty * price;
+
+      item.totalPrice = Types.Decimal128.fromString(total.toString());
+      itemTotal += total;
+    });
+  });
+
+  const discount = Number(this.discount || 0);
+  const vatRate = Number(this.tax?.vatRate || 0);
+
+  const taxable = itemTotal - discount;
+  const vatAmount = (taxable * vatRate) / 100;
+
+  this.itemTotal = Types.Decimal128.fromString(itemTotal.toString());
+  this.tax.vatAmount = Types.Decimal128.fromString(vatAmount.toString());
+  this.grandTotal = Types.Decimal128.fromString((taxable + vatAmount).toString());
+
+  next();
+});
+
+export const Booking = model<IBooking>("Booking", bookingSchema);

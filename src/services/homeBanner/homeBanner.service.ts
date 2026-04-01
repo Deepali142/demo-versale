@@ -4,12 +4,15 @@ import {
 } from "../../models/homeBanner/homeBanner.model";
 import mongoose, { SortOrder, FilterQuery } from "mongoose";
 
+/* ================= CONSTANTS ================= */
+
 export const VALID_DESTINATIONS = [
   "COUPON",
   "AD",
   "HOME",
   "PARTNER",
   "HOW_IT_WORK",
+  "STERILIZATION",
 ] as const;
 
 export const VALID_APP_TYPES = ["USER", "TECHNICIAN"] as const;
@@ -20,6 +23,8 @@ export type Destination = (typeof VALID_DESTINATIONS)[number];
 export type AppType = (typeof VALID_APP_TYPES)[number];
 export type MediaType = (typeof VALID_MEDIA_TYPES)[number];
 
+/* ================= TYPES ================= */
+
 interface SaveHomeBannerPayload {
   appType: AppType;
   mediaType: MediaType;
@@ -27,7 +32,9 @@ interface SaveHomeBannerPayload {
   thumbnailUrl?: string;
   destination: Destination;
   position: number;
+  section?: "TOP" | "MIDDLE" | "BOTTOM";
   data?: string;
+  order: number;
 }
 
 interface EditHomeBannerPayload {
@@ -38,6 +45,8 @@ interface EditHomeBannerPayload {
   destination?: Destination;
   position?: number;
   data?: string;
+  order?: number | undefined;
+  section?: "TOP" | "MIDDLE" | "BOTTOM";
   isActive?: boolean;
 }
 
@@ -48,7 +57,26 @@ export interface GetHomeBannerParams {
   sortOrder?: SortOrder;
 }
 
-// ================== SERVICES ==================
+export type HomeBannerPlain = {
+  _id: mongoose.Types.ObjectId;
+  appType: AppType;
+  mediaType: MediaType;
+  mediaUrl: string;
+  thumbnailUrl?: string;
+  destination: Destination;
+  position: number;
+  data?: string;
+  isActive: boolean;
+  section?: "TOP" | "MIDDLE" | "BOTTOM";
+  createdAt?: Date;
+  order?: number;
+  updatedAt?: Date;
+};
+
+/* Lean type (IMPORTANT) */
+type HomeBannerLean = Omit<IHomeBanner, keyof Document>;
+
+/* ================= SERVICES ================= */
 
 export const saveHomeBannerService = async (
   payload: SaveHomeBannerPayload,
@@ -66,7 +94,7 @@ export const editHomeBannerService = async (
     throw new Error("Invalid banner ID");
   }
 
-  return await HomeBanner.findByIdAndUpdate(
+  return HomeBanner.findByIdAndUpdate(
     homeBannerId,
     { $set: payload },
     {
@@ -79,32 +107,47 @@ export const editHomeBannerService = async (
 export const getHomeBannerListService = async ({
   appType,
   destination,
+  section,
   sortField = "position",
   sortOrder = 1,
-}: GetHomeBannerParams): Promise<IHomeBanner[]> => {
-  const allowedSortFields = ["position", "createdAt", "updatedAt"] as const;
+}: GetHomeBannerParams & {
+  section?: "TOP" | "MIDDLE" | "BOTTOM";
+}): Promise<HomeBannerPlain[]> => {
+  const allowedSortFields = [
+    "position",
+    "order",
+    "createdAt",
+    "updatedAt",
+  ] as const;
 
-  const finalSortField = allowedSortFields.includes(sortField)
-    ? sortField
+  type SortField = (typeof allowedSortFields)[number];
+
+  const finalSortField: SortField = allowedSortFields.includes(
+    sortField as SortField,
+  )
+    ? (sortField as SortField)
     : "position";
 
-  const sortObj: Record<string, SortOrder> = {
-    [finalSortField]: sortOrder,
-  };
+  const sortObj: Record<string, SortOrder> =
+    finalSortField === "position"
+      ? { position: 1, order: 1 } // secondary sort
+      : { [finalSortField]: sortOrder };
 
   const filter: FilterQuery<IHomeBanner> = {
     isActive: true,
-    ...(appType && { appType }),
-    ...(destination && { destination }),
   };
+
+  if (appType) filter.appType = appType;
+  if (destination) filter.destination = destination; 
+  if (section) filter.section = section;
 
   const banners = await HomeBanner.find(filter)
     .sort(sortObj)
-    .lean<IHomeBanner[]>();
+    .lean()
+    .exec();
 
-  return banners;
+  return banners as unknown as HomeBannerPlain[];
 };
-
 export const deleteHomeBannerService = async (
   bannerId: string,
 ): Promise<boolean> => {
@@ -124,21 +167,14 @@ export const toggleBannerStatusService = async (
     throw new Error("Invalid bannerId");
   }
 
-  const updatedBanner = await HomeBanner.findByIdAndUpdate(
-    bannerId,
-    [
-      {
-        $set: {
-          isActive: { $not: "$isActive" },
-        },
-      },
-    ],
-    { new: true },
-  );
+  const banner = await HomeBanner.findById(bannerId);
 
-  if (!updatedBanner) {
+  if (!banner) {
     throw new Error("Banner not found");
   }
 
-  return updatedBanner;
+  banner.isActive = !banner.isActive;
+  await banner.save();
+
+  return banner;
 };

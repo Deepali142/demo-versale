@@ -4,7 +4,7 @@ import Technician, {
 } from "../../models/technician/technician.model";
 import * as technicianotpService from "../technician/otp.service";
 import { Types } from "mongoose";
-import { Booking } from "../../models/booking/booking.model";
+import {Booking} from "../../models/booking/booking.model";
 import { Attendance } from "../../models/Attendance/attendance.model";
 import { Leave } from "../../models/Attendance/leave.model";
 import { Holiday } from "../../models/Attendance/holiday.model";

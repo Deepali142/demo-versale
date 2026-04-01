@@ -1,6 +1,6 @@
-import { Booking } from "../../models/booking/booking.model";
 import Coupon, { ICoupon } from "../../models/coupon/coupon.model";
 import { Types, SortOrder } from "mongoose";
+import {Booking} from "../../models/booking/booking.model";
 
 interface ApplyCouponInput {
   couponCode: string;

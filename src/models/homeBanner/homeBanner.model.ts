@@ -5,12 +5,14 @@ export interface IHomeBanner extends Document {
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl?: string;
-  destination: "COUPON" | "AD" | "HOME" | "PARTNER" | "HOW_IT_WORK";
+  section: "TOP" | "MIDDLE" | "BOTTOM";
+  destination: "COUPON" | "AD" | "HOME" | "PARTNER" | "HOW_IT_WORK" | "STERILIZATION";
   position: number;
   data?: string;
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  order: number;
 }
 
 const HomeBannerSchema = new Schema<IHomeBanner>(
@@ -21,6 +23,11 @@ const HomeBannerSchema = new Schema<IHomeBanner>(
       required: true,
     },
 
+    section: {
+      type: String,
+      enum: ["TOP", "MIDDLE", "BOTTOM"],
+      default: "TOP",
+    },
     mediaType: {
       type: String,
       enum: ["IMAGE", "VIDEO"],
@@ -36,9 +43,11 @@ const HomeBannerSchema = new Schema<IHomeBanner>(
       type: String,
     },
 
+    order: {  type: Number, required: true, default: 0 },
+
     destination: {
       type: String,
-      enum: ["COUPON", "AD", "HOME", "PARTNER", "HOW_IT_WORK"],
+      enum: ["COUPON", "AD", "HOME", "PARTNER", "HOW_IT_WORK","STERILIZATION"],
       required: true,
     },
 
@@ -61,9 +70,9 @@ const HomeBannerSchema = new Schema<IHomeBanner>(
   },
 );
 
-HomeBannerSchema.index(
-  { appType: 1, destination: 1, position: 1 },
-  { unique: true },
-);
+// HomeBannerSchema.index(
+//   { destination: 1, position: 1 },
+//   { unique: false },
+// );
 
 export const HomeBanner = model<IHomeBanner>("HomeBanner", HomeBannerSchema);

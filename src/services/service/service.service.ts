@@ -1,5 +1,6 @@
 import { Service, IService } from "../../models/service/service.model";
 import { Types } from "mongoose";
+import { Decimal128 } from "mongodb";
 
 interface IServiceListQuery {
   page?: number | undefined;
@@ -36,7 +37,51 @@ export const findServiceByNameAndCategory = async (
 export const createService = async (
   serviceData: Partial<IService>,
 ): Promise<IService> => {
-  const newService = new Service(serviceData);
+  const {
+    parentId = null,
+    type = "ITEM",
+    position = 1,
+    orderBy,
+    unitPrice = Decimal128.fromString("0"),
+  } = serviceData;
+
+  const normalizedUnitPrice = unitPrice instanceof Decimal128 ? unitPrice : Decimal128.fromString(unitPrice?.toString() || "0");
+
+  if (!["CATEGORY", "ITEM"].includes(type)) {
+    throw new Error("Invalid service type");
+  }
+
+  if (type === "ITEM" && !parentId) {
+    throw new Error("parentId is required for ITEM type");
+  }
+
+  if (type === "CATEGORY" && parentId) {
+    throw new Error("CATEGORY cannot have parentId");
+  }
+
+  let finalOrder = orderBy;
+
+  if (!finalOrder) {
+    const lastService = await Service.findOne({
+      parentId: parentId,
+    })
+      .sort({ orderBy: -1 })
+      .lean();
+
+    finalOrder = lastService ? lastService.orderBy + 1 : 1;
+  }
+
+  const payload: Partial<IService> = {
+    ...serviceData,
+    parentId,
+    type,
+    position,
+    orderBy: finalOrder,
+    unitPrice: normalizedUnitPrice as any,
+  };
+
+  const newService = new Service(payload);
+
   return newService.save();
 };
 

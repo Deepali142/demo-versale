@@ -31,11 +31,11 @@ import {
   serviceListValidator,
 } from "../../validators/service/service.validator";
 import {
-  addOrderItemValidator,
-  bookingListValidator,
+  // addOrderItemValidator,
+  // bookingListValidator,
   createBookingSchema,
-  editBookingValidator,
-  userBookingListSchema,
+  // editBookingValidator,
+  // userBookingListSchema,
 } from "../../validators/booking/booking.validator";
 import { updateKycSchema } from "../../validators/technician/KYCDoc.valitator";
 import {
@@ -292,7 +292,7 @@ router.put(
 // Service controller routes
 router.post(
   "/admin/service/add",
-  authenticate,
+  // authenticate,
   validateRequest(addServiceSchema),
   serviceController.addService,
 );
@@ -339,13 +339,13 @@ router.get(
 router.put(
   "/admin/booking/edit/:bookingId",
   authenticate,
-  validateRequest(editBookingValidator),
+  // validateRequest(editBookingValidator),
   bookingController.editBooking,
 );
 
 router.get(
   "/admin/booking/list",
-  validateRequest(bookingListValidator),
+  // validateRequest(bookingListValidator),
   authenticate,
   bookingController.bookingList,
 );
@@ -353,20 +353,20 @@ router.get(
 router.get(
   "/admin/booking-list",
   authenticate,
-  validateRequest(bookingListValidator),
+  // validateRequest(bookingListValidator),
   bookingController.ListOfBooking,
 );
 
 router.get(
   "/admin/user/booking/:userId",
   authenticate,
-  validateRequest(userBookingListSchema.params),
+  // validateRequest(userBookingListSchema.params),
   bookingController.userBookingList,
 );
 
 router.post(
   "/admin/booking/order-item/add-edit",
-  validateRequest(addOrderItemValidator),
+  // validateRequest(addOrderItemValidator),
   authenticate,
   bookingController.addOrderItem,
 );

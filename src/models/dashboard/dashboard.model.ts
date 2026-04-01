@@ -1,23 +1,39 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
+
+export type SectionType =
+  | "QUICK_SERVICES"
+  | "BOOKING"
+  | "OTHER"
+  | "REQUEST"
+  | "UTILITIES";
+
+export type AppType = "USER" | "TECHNICIAN";
+
+export type ActionType = "SERVICE" | "NAVIGATE" | "API";
 
 export interface IDashboardItem extends Document {
   name: string;
   iconUrl: string;
 
-  // grouping (IMPORTANT)
-  section: "QUICK_SERVICES" | "BOOKING" | "OTHER";
-
-  // optional UI title (for section heading)
+  section: SectionType;
   sectionTitle?: string;
 
-  appType: "USER" | "TECHNICIAN";
+  appType: AppType;
   position: number;
 
   isActive: boolean;
 
-  // optional future use
-  actionType?: "NAVIGATE" | "API";
+  screen: string; 
+
+  parentId?: Types.ObjectId;
+
+  serviceId?: Types.ObjectId;
+
+  actionType?: ActionType;
   actionValue?: string;
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const DashboardItemSchema = new Schema<IDashboardItem>(
@@ -27,19 +43,20 @@ const DashboardItemSchema = new Schema<IDashboardItem>(
       required: true,
       trim: true,
     },
+
     iconUrl: {
       type: String,
       required: true,
+      trim: true,
     },
 
-    // NEW: section
     section: {
       type: String,
-      enum: ["QUICK_SERVICES", "BOOKING", "OTHER"],
+      enum: ["QUICK_SERVICES", "BOOKING", "OTHER", "REQUEST", "UTILITIES"],
       required: true,
+      index: true,
     },
 
-    //  NEW: section title (optional)
     sectionTitle: {
       type: String,
       trim: true,
@@ -49,28 +66,52 @@ const DashboardItemSchema = new Schema<IDashboardItem>(
       type: String,
       enum: ["USER", "TECHNICIAN"],
       required: true,
+      index: true,
     },
 
     position: {
       type: Number,
       required: true,
+      default: 0,
+      index: true, 
     },
 
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
     },
 
-    // future ready
+    screen: {
+      type: String,
+      required: true,
+      index: true,
+      default: "HOME",
+    },
+
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: "DashboardItem",
+    },
+
+    serviceId: {
+      type: Schema.Types.ObjectId,
+      ref: "Service",
+    },
+
     actionType: {
       type: String,
-      enum: ["NAVIGATE", "API"],
+      enum: ["SERVICE", "NAVIGATE", "API"],
     },
+
     actionValue: {
       type: String,
+      trim: true,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
 export const DashboardItem = model<IDashboardItem>(

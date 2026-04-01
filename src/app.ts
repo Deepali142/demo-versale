@@ -7,6 +7,7 @@ import adminRoutes from "./routes/admin/admin.routes";
 import technicianRoutes from "./routes/technician/technician.routes";
 import userRoutes from "./routes/user/user.routes";
 import homeRoutes from "./routes/home/home.routes";
+import enquiryRoutes from "./routes/admin/enquiry.routes";
 
 const app = express();
 
@@ -14,6 +15,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 connectDB();
-app.use("/api/v1", adminRoutes, technicianRoutes, userRoutes, homeRoutes);
+app.use("/api/v1", adminRoutes, technicianRoutes, userRoutes, homeRoutes,enquiryRoutes);
 
 export default app;

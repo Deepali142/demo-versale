@@ -22,11 +22,11 @@ const bannerValidatorSchema = Joi.object({
   }),
 
   destination: Joi.string()
-    .valid("COUPON", "AD", "HOME", "PARTNER", "HOW_IT_WORK")
+    .valid("COUPON", "AD", "HOME", "PARTNER", "HOW_IT_WORK","STERILIZATION")
     .required()
     .messages({
       "any.only":
-        "destination must be one of [COUPON, AD, HOME, PARTNER, HOW_IT_WORK]",
+        "destination must be one of [COUPON, AD, HOME, PARTNER, HOW_IT_WORK, STERILIZATION]",
       "any.required": "destination is required",
     }),
 
@@ -35,6 +35,19 @@ const bannerValidatorSchema = Joi.object({
     "number.integer": "position must be an integer",
     "number.min": "position must be greater than 0",
     "any.required": "position is required",
+  }),
+
+  section: Joi.string()
+    .valid("TOP", "MIDDLE", "BOTTOM")
+    .optional()
+    .messages({
+      "any.only": "section must be TOP, MIDDLE or BOTTOM",
+    }),
+
+  order: Joi.number().integer().min(1).optional().messages({
+    "number.base": "order must be a number",
+    "number.integer": "order must be an integer",
+    "number.min": "order must be greater than 0",
   }),
 
   data: Joi.string().allow("", null).messages({
@@ -49,10 +62,12 @@ export interface BannerRequestBody {
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl?: string | null;
-  destination: "COUPON" | "AD" | "HOME" | "PARTNER" | "HOW_IT_WORK";
+  destination: "COUPON" | "AD" | "HOME" | "PARTNER" | "HOW_IT_WORK" | "STERILIZATION";
   position: number;
   data?: string | null;
   id?: string;
+  section?: "TOP" | "MIDDLE" | "BOTTOM";
+  order?: number | undefined;
 }
 
 export const bannerValidator = (

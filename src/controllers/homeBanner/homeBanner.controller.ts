@@ -15,6 +15,8 @@ import {
 
 // ================== TYPES ==================
 
+type BannerSection = "TOP" | "MIDDLE" | "BOTTOM";
+
 type EditHomeBannerPayload = {
   appType?: AppType;
   mediaType?: MediaType;
@@ -24,6 +26,8 @@ type EditHomeBannerPayload = {
   position?: number;
   data?: string;
   isActive?: boolean;
+  section?: BannerSection;
+  order?: number | undefined;
 };
 
 interface ToggleBannerParams {
@@ -42,6 +46,8 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       destination,
       position,
       data,
+      section,
+      order,
     } = req.body as {
       appType?: AppType;
       mediaType?: MediaType;
@@ -50,9 +56,14 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       destination?: Destination;
       position?: number;
       data?: string;
+      section?: BannerSection;
+      order: number;
     };
 
-    // ✅ Validation
+    //  Allowed values
+    const VALID_SECTIONS = ["TOP", "MIDDLE", "BOTTOM"];
+
+    // Validation
     if (
       !appType ||
       !VALID_APP_TYPES.includes(appType) ||
@@ -60,7 +71,7 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       !mediaUrl ||
       !destination ||
       !VALID_DESTINATIONS.includes(destination) ||
-      position === undefined
+      typeof position !== "number"
     ) {
       return res.status(400).json({
         success: false,
@@ -68,15 +79,24 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await saveHomeBannerService({
+    // Section default + validation
+    const finalSection: "TOP" | "MIDDLE" | "BOTTOM" =
+      section && VALID_SECTIONS.includes(section) ? section : "TOP";
+
+    // Clean payload
+    const payload = {
       appType,
       mediaType,
       mediaUrl,
-      ...(thumbnailUrl && { thumbnailUrl }),
-      ...(data && { data }),
       destination,
       position,
-    });
+      section: finalSection,
+      order,
+      ...(thumbnailUrl && { thumbnailUrl }),
+      ...(data && { data }),
+    };
+
+    const result = await saveHomeBannerService(payload);
 
     return res.status(201).json({
       success: true,
@@ -87,11 +107,12 @@ export const addHomeBanner = async (req: Request, res: Response) => {
     const errMsg =
       error instanceof Error ? error.message : "Unexpected error occurred";
 
-    if (errMsg.includes("duplicate key")) {
+    // Better duplicate handling
+    if (errMsg.includes("duplicate key") || (error as any)?.code === 11000) {
       return res.status(400).json({
         success: false,
         message:
-          "Banner already exists at this position for this appType & destination",
+          "Banner already exists at this position for this appType + section",
       });
     }
 
@@ -115,7 +136,6 @@ export const editHomeBanner = async (req: Request, res: Response) => {
         message: "Home banner ID is required",
       });
     }
-
     const {
       appType,
       mediaType,
@@ -125,9 +145,15 @@ export const editHomeBanner = async (req: Request, res: Response) => {
       position,
       data,
       isActive,
+      section,
+      order
     } = req.body as EditHomeBannerPayload;
+    
 
-    // ✅ Validate enums if provided
+    //  Allowed values
+    const VALID_SECTIONS = ["TOP", "MIDDLE", "BOTTOM"];
+
+    // Validate enums if provided
     if (appType && !VALID_APP_TYPES.includes(appType)) {
       return res.status(400).json({
         success: false,
@@ -142,6 +168,27 @@ export const editHomeBanner = async (req: Request, res: Response) => {
       });
     }
 
+    if (mediaType && !["IMAGE", "VIDEO"].includes(mediaType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid mediaType",
+      });
+    }
+
+    if (section && !VALID_SECTIONS.includes(section)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid section",
+      });
+    }
+
+    if (position !== undefined && typeof position !== "number") {
+      return res.status(400).json({
+        success: false,
+        message: "Position must be a number",
+      });
+    }
+    //  Clean payload
     const payload: EditHomeBannerPayload = {
       ...(appType && { appType }),
       ...(mediaType && { mediaType }),
@@ -151,7 +198,11 @@ export const editHomeBanner = async (req: Request, res: Response) => {
       ...(position !== undefined && { position }),
       ...(data !== undefined && { data }),
       ...(isActive !== undefined && { isActive }),
+      ...(section && { section }),
+      ...(order !== undefined && { order }),
+        
     };
+    
 
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({
@@ -182,11 +233,12 @@ export const editHomeBanner = async (req: Request, res: Response) => {
     const errMsg =
       error instanceof Error ? error.message : "Unexpected error occurred";
 
-    if (errMsg.includes("duplicate key")) {
+    // Better duplicate handling
+    if (errMsg.includes("duplicate key") || (error as any)?.code === 11000) {
       return res.status(400).json({
         success: false,
         message:
-          "Banner already exists at this position for this appType & destination",
+          "Banner already exists at this position for this appType + section",
       });
     }
 
@@ -205,18 +257,32 @@ export const getHomeBannerList = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const { sortby, orderby, appType, destination } = req.query as {
+    const {
+      sortby,
+      orderby,
+      appType,
+      destination,
+      section,
+      isActive,
+    } = req.query as {
       sortby?: string;
       orderby?: string;
       appType?: AppType;
       destination?: string;
+      section?: "TOP" | "MIDDLE" | "BOTTOM";
+      isActive?: string;
     };
 
-    const sortField: GetHomeBannerParams["sortField"] =
-      sortby === "createdAt" || sortby === "updatedAt" ? sortby : "position";
-
+    // Sorting logic
     const sortOrder: 1 | -1 = orderby === "desc" ? -1 : 1;
 
+    // Default sorting: position → order
+    const sort: any =
+      sortby === "createdAt" || sortby === "updatedAt"
+        ? { [sortby]: sortOrder }
+        : { position: 1, order: 1 };
+
+    // Validate appType
     if (appType && !VALID_APP_TYPES.includes(appType)) {
       return res.status(400).json({
         success: false,
@@ -224,8 +290,8 @@ export const getHomeBannerList = async (
       });
     }
 
+    // Validate destination
     let typedDestination: Destination | undefined;
-
     if (destination) {
       if (!VALID_DESTINATIONS.includes(destination as Destination)) {
         return res.status(400).json({
@@ -236,11 +302,32 @@ export const getHomeBannerList = async (
       typedDestination = destination as Destination;
     }
 
-    const payload: GetHomeBannerParams = {
-      sortField,
-      sortOrder,
+    //  Validate section
+    let typedSection: "TOP" | "MIDDLE" | "BOTTOM" | undefined;
+    if (section) {
+      const VALID_SECTIONS = ["TOP", "MIDDLE", "BOTTOM"];
+      if (!VALID_SECTIONS.includes(section)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid section",
+        });
+      }
+      typedSection = section;
+    }
+
+    // Convert isActive
+    let activeFilter: boolean | undefined;
+    if (isActive !== undefined) {
+      activeFilter = isActive === "true";
+    }
+
+    //  Build payload
+    const payload: any = {
+      sort,
       ...(appType && { appType }),
       ...(typedDestination && { destination: typedDestination }),
+      ...(typedSection && { section: typedSection }),
+      ...(activeFilter !== undefined && { isActive: activeFilter }),
     };
 
     const banners = await getHomeBannerListService(payload);

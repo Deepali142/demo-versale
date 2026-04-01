@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 
 // Define your JWT payload type
-interface AuthPayload extends JwtPayload {
+export interface AuthPayload extends JwtPayload {
   id: string;
   role: string;
 }
@@ -23,6 +23,7 @@ export const authenticate = (
   next: NextFunction,
 ) => {
   const authHeader = req.headers["authorization"];
+  console.log("Auth Header:", authHeader);
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {

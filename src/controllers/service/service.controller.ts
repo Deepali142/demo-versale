@@ -9,7 +9,8 @@ import {
   toggleServiceStatus,
   updateServiceById,
 } from "../../services/service/service.service";
-import { ServiceCategory } from "../../models/service/service.model";
+import { Service, ServiceCategory } from "../../models/service/service.model";
+import { Types } from "mongoose";
 // import { STATUS, CODES, MESSAGES } from "../../constants";
 
 export const addService = async (
@@ -17,26 +18,81 @@ export const addService = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const { name, description, terms, category, banner_images, icon, key } =
-      req.body;
+    let {
+      name,
+      description,
+      terms,
+      category,
+      banner_images,
+      icon,
+      key,
+      parentId,
+      type,
+      position,
+      unitPrice,
+    } = req.body;
 
-    if (!name || !category) {
+    // ✅ Trim name
+    name = name?.trim();
+
+    // ✅ Required validation
+    if (!name || !category || !type) {
       return res.status(400).json({
         success: false,
-        message: "Name and category are required.",
+        message: "Name, category and type are required.",
       });
     }
 
-    const existingService = await findServiceByNameAndCategory(name, category);
+    // ✅ Validate type
+    if (!["CATEGORY", "ITEM"].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid type. Must be CATEGORY or ITEM",
+      });
+    }
+
+    // ✅ Validate parentId format
+    if (parentId && !Types.ObjectId.isValid(parentId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid parentId",
+      });
+    }
+
+    // ✅ Hierarchy rules
+    if (type === "ITEM" && !parentId) {
+      return res.status(400).json({
+        success: false,
+        message: "parentId is required for ITEM type",
+      });
+    }
+
+    if (type === "CATEGORY" && parentId) {
+      return res.status(400).json({
+        success: false,
+        message: "CATEGORY should not have parentId",
+      });
+    }
+
+    // ✅ Case-insensitive duplicate check
+    const existingService = await Service.findOne({
+      name: { $regex: `^${name}$`, $options: "i" },
+      category,
+      parentId: parentId || null,
+    });
 
     if (existingService) {
       return res.status(409).json({
         success: false,
-        message: `Service with the name '${name}' already exists in the '${category}' category.`,
+        message: `Service '${name}' already exists at this level.`,
       });
     }
 
-    await createService({
+    // ✅ Convert unitPrice safely
+    const finalUnitPrice = parseFloat(String(unitPrice ?? 0));
+
+    // ✅ Clean payload (NO orderBy → handled in service)
+    const payload = {
       name,
       icon,
       description: description || [],
@@ -44,7 +100,13 @@ export const addService = async (
       banner_images: banner_images || [],
       category: category as ServiceCategory,
       key,
-    });
+      parentId: parentId || null,
+      type,
+      position: position ?? 1,
+      unitPrice: finalUnitPrice as any,
+    };
+
+    await createService(payload);
 
     return res.status(201).json({
       success: true,
@@ -52,10 +114,11 @@ export const addService = async (
     });
   } catch (error: unknown) {
     console.error("Error creating service:", error);
+
     return res.status(500).json({
       success: false,
       message: "Internal server error.",
-      error: (error as Error).message,
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 };

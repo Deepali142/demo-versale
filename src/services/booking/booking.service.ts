@@ -13,15 +13,50 @@ import { PipelineStage } from "mongoose";
 import { calculateTotal } from "../../utils/calculateTotal";
 
 // Interface for Service Details
-interface IServiceDetail {
+export interface IServiceDetail {
   service_id: Types.ObjectId;
-  serviceType?: string;
-  quantity: string;
+
+  serviceType: "Sterilization" | "Repair" | "Installation";
+
+  quantity: number;
+
+  attributes: {
+    type: "AC" | "Boiler" | "Heat Pump"; // main category
+    subType?: string; // Split / Combi / Air Source
+    variant?: string; // Wall Mount / Floor Mount
+  };
+
+  variant?: string;
+
   acType?: string;
-  place?: string;
-  otherService?: string;
+
   comment?: string;
-  services?: unknown[];
+}
+interface IServiceLean {
+  _id: Types.ObjectId;
+  name: string;
+  price?: number;
+  category?: string;
+}
+
+interface IServiceItem {
+  serviceId: Types.ObjectId;
+  name: string;
+  serviceType: "Sterilization" | "Repair" | "Installation";
+  quantity: number;
+  unitPrice: Types.Decimal128;
+  totalPrice: Types.Decimal128;
+  attributes: {
+    type: "AC" | "Boiler" | "Heat Pump";
+    subType?: string;
+    variant?: string;
+  };
+}
+
+interface IServiceInput {
+  serviceId: Types.ObjectId | string;
+  quantity?: number;
+  acType?: string;
 }
 
 // Interface for Create Booking input
@@ -42,6 +77,11 @@ interface IBookingResponse {
   user_id: Types.ObjectId;
   slot: string;
   date: Date;
+}
+
+export interface IServiceCategory {
+  category: "AC" | "Boiler" | "Heat Pump";
+  items: IServiceItem[];
 }
 
 export interface IOrderItem {
@@ -67,6 +107,16 @@ export interface IBookingResponseById {
   updatedAt: Date;
   serviceDetails: IService[];
   orderItems: IOrderItem[];
+  assigned_to?: Types.ObjectId;
+}
+
+interface IBooking {
+  _id?: Types.ObjectId;
+  bookingId?: string;
+  user_id?: Types.ObjectId;
+  assigned_to?: Types.ObjectId;
+  status?: string;
+  [key: string]: any;
 }
 
 interface IEditBookingParams {
@@ -94,93 +144,156 @@ interface BookingQuery {
 export const createBooking = async (
   data: ICreateBookingInput,
 ): Promise<IBookingResponse> => {
-  const {
-    user_id,
-    serviceDetails,
-    addressId,
-    slot,
-    date,
-    amount,
-    order_id,
-    name,
-  } = data;
+  const { user_id, serviceDetails, addressId, slot, date, order_id, name } =
+    data;
 
-  // 1. Validate fields
-  if (!user_id) throw new Error("User ID is required");
-  if (!name) throw new Error("Name is required for booking");
-  if (!addressId) throw new Error("Address ID is required");
-  if (!slot) throw new Error("Slot is required");
-  if (!date || isNaN(new Date(date).getTime())) throw new Error("Invalid date");
-  if (amount === undefined || amount === null || isNaN(Number(amount))) {
-    throw new Error("Invalid booking amount");
+  /* ---------------- VALIDATION ---------------- */
+  if (!user_id) throw new Error("USER_ID_REQUIRED");
+  if (!name) throw new Error("NAME_REQUIRED");
+  if (!addressId) throw new Error("ADDRESS_REQUIRED");
+  if (!slot) throw new Error("SLOT_REQUIRED");
+
+  if (!date || isNaN(new Date(date).getTime())) {
+    throw new Error("INVALID_DATE");
   }
 
-  // 2. Verify address
-  const address = await Address.findById(addressId);
-  if (!address) throw new Error("Invalid Address ID");
+  if (!serviceDetails?.length) {
+    throw new Error("SERVICE_DETAILS_REQUIRED");
+  }
 
-  // 3. Generate booking ID
-  const formattedDate = moment().format("DDMMYYYY");
-  const countTotalBooking = await Booking.countDocuments();
-  const bookingId = `ACDOCBK${formattedDate}-${countTotalBooking + 1}`;
+  /* ---------------- ADDRESS ---------------- */
+  const address = await Address.findById(addressId).lean();
+  if (!address) throw new Error("INVALID_ADDRESS");
 
-  // 4. Prepare order items
-  const orderItems: {
-    item: string;
-    quantity: string;
-    price: number;
-  }[] = [];
+  /* ---------------- BOOKING ID ---------------- */
+  const bookingId = `ACDOCBK${Date.now()}`;
 
+  /* ---------------- FETCH SERVICES ---------------- */
+  const serviceIds: Types.ObjectId[] = serviceDetails.map((s) =>
+    typeof s.service_id === "string"
+      ? new Types.ObjectId(s.service_id)
+      : s.service_id,
+  );
+
+  const servicesFromDB = await Service.find({
+    _id: { $in: serviceIds },
+  })
+    .select("name price category")
+    .lean<IServiceLean[]>();
+
+  const serviceMap = new Map(servicesFromDB.map((s) => [s._id.toString(), s]));
+
+  const categoryMap = new Map<string, any[]>();
+  let itemTotal = 0;
+
+  /* ---------------- BUILD SERVICES ---------------- */
   for (const item of serviceDetails) {
-    const findService = await Service.findById(item.service_id).select("name");
-    if (!findService) continue;
+    const serviceIdStr =
+      typeof item.service_id === "string"
+        ? item.service_id
+        : item.service_id.toString();
 
-    orderItems.push({
-      item: `${findService.name} ${item.acType || ""}`.trim(),
-      quantity: item.quantity,
-      price: 0,
+    const service = serviceMap.get(serviceIdStr);
+    if (!service) continue;
+
+    const quantity = Number(item.quantity ?? 1);
+    const unitPrice = Number(service.price ?? 0);
+    const totalPrice = unitPrice * quantity;
+
+    itemTotal += totalPrice;
+
+    const category = service.category || "AC";
+
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, []);
+    }
+
+    categoryMap.get(category)!.push({
+      serviceId: service._id,
+      name: service.name,
+
+      serviceType: item.serviceType || "Repair",
+
+      quantity,
+
+      unitPrice: Types.Decimal128.fromString(unitPrice.toString()),
+      totalPrice: Types.Decimal128.fromString(totalPrice.toString()),
+
+      attributes: {
+        type: category,
+        subType: item.attributes?.subType || "",
+        variant: item.variant || "",
+      },
     });
   }
 
-  // 5. Create booking
-  const booking = new Booking({
+  const services = Array.from(categoryMap.entries()).map(
+    ([category, items]) => ({
+      category,
+      items,
+    }),
+  );
+
+  /* ---------------- PRICING (UK VAT) ---------------- */
+  const discount = 0;
+  const vatRate = 20;
+
+  const taxableAmount = itemTotal - discount;
+  const vatAmount = (taxableAmount * vatRate) / 100;
+
+  const grandTotal = taxableAmount + vatAmount;
+
+  /* ---------------- CREATE BOOKING ---------------- */
+  const booking = await Booking.create({
     user_id,
     bookingId,
-    serviceDetails,
-    addressDetails: address,
+    services,
+    address,
     slot,
     date: new Date(date),
-    amount: amount.toString(),
-    order_id: order_id || "",
-    orderItems,
+
+    itemTotal: Types.Decimal128.fromString(itemTotal.toString()),
+    discount: Types.Decimal128.fromString(discount.toString()),
+
+    tax: {
+      vatRate,
+      vatAmount: Types.Decimal128.fromString(vatAmount.toString()),
+    },
+
+    grandTotal: Types.Decimal128.fromString(grandTotal.toString()),
+
+    order_id: order_id ?? "",
   });
 
-  const savedBooking = await booking.save();
-
-  // 6. Send notification
+  /* ---------------- NOTIFICATION ---------------- */
   const user = await User.findById(user_id).select("deviceToken name");
+
   if (user) {
-    if (!user.name) await User.updateOne({ _id: user_id }, { name });
+    if (!user.name) {
+      await User.updateOne({ _id: user_id }, { name });
+    }
 
     if (user.deviceToken) {
-      const title = "Booking";
-      const body = "Your booking has been successfully created!";
-      await sendPushNotification(user.deviceToken, title, body);
+      await sendPushNotification(
+        user.deviceToken,
+        "Booking Created",
+        "Your booking has been successfully created!",
+      );
 
       await Notification.create({
         userId: user_id,
-        text: body,
+        text: "Your booking has been successfully created!",
       });
     }
   }
 
-  // 7. return only the necessary booking details
+  /* ---------------- RESPONSE ---------------- */
   return {
-    _id: savedBooking._id as Types.ObjectId,
-    bookingId: savedBooking.bookingId,
-    user_id: savedBooking.user_id,
-    slot: savedBooking.slot,
-    date: savedBooking.date,
+    _id: booking._id,
+    bookingId: booking.bookingId,
+    user_id: booking.user_id,
+    slot: booking.slot,
+    date: booking.date,
   };
 };
 
@@ -273,23 +386,111 @@ export const updateBooking = async ({
   addressId,
   slot,
   date,
-  amount,
 }: IEditBookingParams) => {
-  // Check if booking exists
   const existingBooking = await Booking.findById(new Types.ObjectId(bookingId));
+
   if (!existingBooking) return null;
 
-  // Check if address exists
-  const address = await Address.findById(addressId);
-  if (!address) throw new Error("Invalid address ID");
+  /* -------- ADDRESS -------- */
+  const address = await Address.findById(addressId).lean();
+  if (!address) throw new Error("INVALID_ADDRESS");
 
-  // Update booking fields
-  existingBooking.serviceDetails =
-    serviceDetails || existingBooking.serviceDetails;
-  existingBooking.addressDetails = [address];
-  existingBooking.slot = slot;
-  existingBooking.date = new Date(date);
-  existingBooking.amount = new Types.Decimal128(amount.toString());
+  /* -------- UPDATE SERVICES -------- */
+  if (serviceDetails?.length) {
+    const serviceIds: Types.ObjectId[] = serviceDetails.map((s) =>
+      typeof s.service_id === "string"
+        ? new Types.ObjectId(s.service_id)
+        : s.service_id,
+    );
+
+    const servicesFromDB = await Service.find({
+      _id: { $in: serviceIds },
+    })
+      .select("name price category")
+      .lean<IServiceLean[]>();
+
+    const serviceMap = new Map(
+      servicesFromDB.map((s) => [s._id.toString(), s]),
+    );
+
+    const categoryMap = new Map<string, any[]>();
+    let itemTotal = 0;
+
+    for (const item of serviceDetails) {
+      const serviceIdStr =
+        typeof item.service_id === "string"
+          ? item.service_id
+          : item.service_id.toString();
+
+      const service = serviceMap.get(serviceIdStr);
+      if (!service) continue;
+
+      const quantity = Math.max(1, Number(item.quantity ?? 1));
+      const unitPrice = Math.max(0, Number(service.price ?? 0));
+      const totalPrice = unitPrice * quantity;
+
+      itemTotal += totalPrice;
+
+      const category = service.category || "AC";
+
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, []);
+      }
+
+      categoryMap.get(category)!.push({
+        serviceId: service._id,
+        name: service.name,
+
+        serviceType: item.serviceType || "Repair",
+
+        quantity,
+
+        unitPrice: Types.Decimal128.fromString(unitPrice.toString()),
+        totalPrice: Types.Decimal128.fromString(totalPrice.toString()),
+
+        attributes: {
+          type: category,
+          subType: item.attributes?.subType || "",
+          variant: item.attributes?.variant || "",
+        },
+      });
+    }
+
+    existingBooking.services = Array.from(categoryMap.entries()).map(
+      ([category, items]) => ({
+        category: category as "AC" | "Boiler" | "Heat Pump",
+        items,
+      }),
+    ) as IServiceCategory[];
+
+    /* -------- PRICING (UK VAT) -------- */
+    const discount = 0;
+    const vatRate = 20;
+
+    const taxableAmount = itemTotal - discount;
+    const vatAmount = (taxableAmount * vatRate) / 100;
+    const grandTotal = taxableAmount + vatAmount;
+
+    existingBooking.itemTotal = Types.Decimal128.fromString(
+      itemTotal.toString(),
+    );
+
+    existingBooking.discount = Types.Decimal128.fromString(discount.toString());
+
+    existingBooking.tax = {
+      vatRate,
+      vatAmount: Types.Decimal128.fromString(vatAmount.toString()),
+    };
+
+    existingBooking.grandTotal = Types.Decimal128.fromString(
+      grandTotal.toString(),
+    );
+  }
+
+  existingBooking.address = address;
+
+  if (slot) existingBooking.slot = slot;
+  if (date) existingBooking.date = new Date(date);
 
   await existingBooking.save();
 
@@ -585,10 +786,12 @@ export const createInvoice = async (bookingId: string): Promise<void> => {
 
   // Normalize order items (convert price to float)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const normalizedOrderItems = (booking?.orderItems ?? []).map((item: any) => ({
-    ...item.toObject(),
-    price: Number(item.price.toString()),
-  }));
+  const normalizedOrderItems = ((booking as any)?.orderItems ?? []).map(
+    (item: any) => ({
+      ...item.toObject(),
+      price: Number(item.price.toString()),
+    }),
+  );
 
   if (normalizedOrderItems.length === 0) {
     throw new Error("At least one order item is required");
@@ -701,9 +904,9 @@ export const updateBookingStatus = async (
   await Booking.updateOne({ _id: bookingId }, { status });
 
   // If booking is completed, free technician and notify user
-  if (status === "COMPLETE" && booking.assigned_to) {
+  if (status === "COMPLETE" && (booking as any).assigned_to) {
     await Technician.updateOne(
-      { _id: new Types.ObjectId(booking.assigned_to) },
+      { _id: new Types.ObjectId((booking as any).assigned_to) },
       { status: "AVAILABLE" },
     );
 
