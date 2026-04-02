@@ -1,6 +1,15 @@
 import { Request, Response } from "express";
 import { getHomeScreenService } from "../../services/home/home.service";
 
+// controllers/homeConfig/homeConfig.controller.ts
+import {
+  createHomeConfigService,
+  getHomeConfigListService,
+  getHomeConfigByIdService,
+  updateHomeConfigService,
+  deleteHomeConfigService,
+} from "../../services/home/home.service";
+
 // --------------------
 // TYPES
 // --------------------
@@ -27,17 +36,7 @@ export const getHomeScreen = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const { type, screen } = req.query as {
-      type?: string;
-      screen?: string;
-    };
-
-    if (!type) {
-      return res.status(400).json({
-        success: false,
-        message: "type is required (USER or TECHNICIAN)",
-      });
-    }
+    const { type, screen } = req.query;
 
     if (!isValidAppType(type)) {
       return res.status(400).json({
@@ -46,33 +45,157 @@ export const getHomeScreen = async (
       });
     }
 
-    let validScreen: Screen | undefined;
-
-    if (screen) {
-      if (!isValidScreen(screen)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid screen",
-        });
-      }
-      validScreen = screen as Screen;
+    if (screen && !isValidScreen(screen)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid screen",
+      });
     }
 
-    // ✅ Call service with proper types
     const data = await getHomeScreenService(
-      type as AppType,
-      validScreen,
+      type,
+      screen as Screen,
     );
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error: unknown) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to load home screen",
+    });
+  }
+};
+
+
+// --------------------
+// CREATE
+// --------------------
+export const createHomeConfig = async (req: Request, res: Response) => {
+  try {
+    const data = await createHomeConfigService(req.body);
+
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// --------------------
+// LIST
+// --------------------
+export const getHomeConfigList = async (req: Request, res: Response) => {
+  try {
+    const { appType, screen } = req.query;
+
+    const data = await getHomeConfigListService({
+      appType: appType as any,
+      screen: screen as any,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch configs",
+    });
+  }
+};
+
+// --------------------
+// GET BY ID
+// --------------------
+export const getHomeConfigById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing id param",
+      });
+    }
+
+    const data = await getHomeConfigByIdService(id);
 
     return res.status(200).json({
       success: true,
       data,
     });
-  } catch (error: unknown) {
-    return res.status(500).json({
+  } catch (error: any) {
+    return res.status(404).json({
       success: false,
-      message: "Failed to load home screen",
-      error: error instanceof Error ? error.message : "Unknown error",
+      message: error.message,
+    });
+  }
+};
+
+// --------------------
+// UPDATE
+// --------------------
+export const updateHomeConfig = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing id param",
+      });
+    }
+
+    const data = await updateHomeConfigService(id, req.body);
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// --------------------
+// DELETE
+// --------------------
+export const deleteHomeConfig = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+     if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing id param",
+      });
+    }
+
+
+    const data = await deleteHomeConfigService(id);
+
+    return res.status(200).json({
+      success: true,
+      ...data,
+    });
+  } catch (error: any) {
+    return res.status(404).json({
+      success: false,
+      message: error.message,
     });
   }
 };

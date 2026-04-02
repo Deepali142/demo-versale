@@ -1,0 +1,2202 @@
+{
+	"info": {
+		"_postman_id": "f6bff631-14e8-44ea-adfa-6129f0750693",
+		"name": "NouvakServerAPI",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "48769912",
+		"_collection_link": "https://sachinacdoctor-6136662.postman.co/workspace/sachin-sharma's-Workspace~3e94d87d-d227-4b7c-8451-357e46ed1c7c/collection/48769912-f6bff631-14e8-44ea-adfa-6129f0750693?action=share&source=collection_link&creator=48769912"
+	},
+	"item": [
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Services",
+					"item": [
+						{
+							"name": "Service Add",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU5MjMwNSwiZXhwIjoxNzYyNTkzMjA1fQ.xIzqlOQ980sRL3LDHZIxNL1lCIQKu86vlCjkWSSNShw",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "// {\r\n//     \"name\": \"Sterlization\",\r\n//     \"category\": \"BASIC\"\r\n// }\r\n\r\n{\r\n  \"name\": \"Repair\",\r\n  \"description\": [\r\n    \"Expert repair services to restore your AC to peak performance.\",\r\n    \"Fast and efficient AC repair solutions for all major brands.\",\r\n    \"Thorough diagnostics and repairs for consistent cooling\",\r\n    \"Specialized AC repair services with a focus on quality.\"\r\n  ],\r\n  \"terms\": [\r\n    \"Service warranty is valid for 30 days from the date of repair.\",\r\n    \"All parts replaced are covered under manufacturer warranty only.\",\r\n    \"Payment must be made in full upon completion of the repair\",\r\n    \"Cancellations must be made 24 hours in advance to avoid charges\"\r\n  ],\r\n  \"icon\": \"https://acdoctor-service-booking-system.new.com/prod/service/banner/Repair.png\",\r\n  \"category\": \"BASIC\",\r\n  \"key\": \"REPAIR\",\r\n  \"banner_images\": [\r\n    {\r\n      \"type\": \"banner-0\",\r\n      \"url\": \"https://acdoctor-service-booking-system.new.com/prod/service/banner/2T%20Repair.jpeg\"\r\n    },\r\n    {\r\n      \"type\": \"banner-1\",\r\n      \"url\": \"https://acdoctor-service-booking-system.new.com/prod/service/banner/2B%20Repair.jpeg\"\r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/service/add",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"service",
+										"add"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Service Edit",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU5MzI2MywiZXhwIjoxNzYyNTk0MTYzfQ.oH57qJBQmK-J7UvI2N9Yw2w63a6BQl4Yp-nqJleyz2c",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "// {\r\n//     \"name\": \"Sterlization\",\r\n//     \"category\": \"BASIC\"\r\n// }\r\n\r\n{\r\n  \"name\": \"Sterilization\",\r\n  \"description\": [\r\n    \"Comprehensive AC servicing to ensure optimal cooling efficiency\",\r\n    \"Quick and reliable AC repair services by certified technicians.\",\r\n    \"Annual maintenance contracts for hassle-free AC performance.\",\r\n    \"Test data\"\r\n  ],\r\n  \"terms\": [\r\n    \"Service warranty is valid for 30 days from the date of service.\",\r\n    \"All parts replaced are covered under manufacturer warranty only.\",\r\n    \"Payment must be made in full upon completion of the service\"\r\n  ],\r\n  \"icon\": \"https://acdoctor-service-booking-system.s3.ap-south-1.amazonaws.com/prod/service/banner/Strerilization.png\",\r\n  \"category\": \"AMC\",\r\n  \"key\": \"STERILIZATION\",\r\n  \"banner_images\": [\r\n    {\r\n      \"type\": \"banner-0\",\r\n      \"url\": \"https://acdoctor-service-booking-system.s3.ap-south-1.amazonaws.com/prod/service/banner/1T%20Sterilization.jpeg\",\r\n      \"_id\": \"6770d32e2958ed962280107d\"\r\n    },\r\n    {\r\n      \"type\": \"banner-1\",\r\n      \"url\": \"https://acdoctor-service-booking-system.new.com/prod/service/banner/1B%20Sterilization.jpeg\",\r\n      \"_id\": \"6770d32e2958ed962280107e\"\r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/service/edit/690f06f790309073bc0bf1dd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"service",
+										"edit",
+										"690f06f790309073bc0bf1dd"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Service Get",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU5MzI2MywiZXhwIjoxNzYyNTk0MTYzfQ.oH57qJBQmK-J7UvI2N9Yw2w63a6BQl4Yp-nqJleyz2c",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Sterlization\",\r\n    \"category\": \"BASIC\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/service/get/690f06f790309073bc0bf1dd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"service",
+										"get",
+										"690f06f790309073bc0bf1dd"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Service Status Toggle",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU5MzI2MywiZXhwIjoxNzYyNTk0MTYzfQ.oH57qJBQmK-J7UvI2N9Yw2w63a6BQl4Yp-nqJleyz2c",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "// {\r\n//     \"name\": \"Sterlization\",\r\n//     \"category\": \"BASIC\"\r\n// }",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/service/active-inactive/690f06f790309073bc0bf1dd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"service",
+										"active-inactive",
+										"690f06f790309073bc0bf1dd"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Service List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU5NDM2NSwiZXhwIjoxNzYyNTk1MjY1fQ.lwXDsvkpOl-ciP3lXFoX_2t8BnH1oeimCrffTBFHzwc",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/service/list?limit=10&page=1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"service",
+										"list"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Service Mobile List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU5NDM2NSwiZXhwIjoxNzYyNTk1MjY1fQ.lwXDsvkpOl-ciP3lXFoX_2t8BnH1oeimCrffTBFHzwc",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/service/mobile-list",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"service",
+										"mobile-list"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "booking",
+					"item": [
+						{
+							"name": "Booking Add",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjYwMTEyMSwiZXhwIjoxNzYyNjAyMDIxfQ.y9dwAnQRyZvQiya50XZhcraMALWMkKylhAlcQAgyo70",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"user_id\": \"69060611edbd136d77646b35\",\r\n  \"serviceDetails\": [\r\n    {\r\n      \"service_id\": \"690f06f790309073bc0bf1dd\",\r\n      \"serviceType\": \"AC Repair\",\r\n      \"quantity\": \"1\",\r\n      \"comment\": \"Please check cooling issue\"\r\n    }\r\n  ],\r\n  \"addressId\": \"690f1f48bf4ad511b8877c6c\", \r\n  \"slot\": \"FIRST_HALF\",\r\n  \"date\": \"2023-12-05\",\r\n  \"amount\": 1200,\r\n  \"order_id\": \"ord_98765\",\r\n  \"name\": \"sterlization\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/add",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"add"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking Assign Technician",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjYwMTEyMSwiZXhwIjoxNzYyNjAyMDIxfQ.y9dwAnQRyZvQiya50XZhcraMALWMkKylhAlcQAgyo70",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"bookingId\": \"690f28bf3f171f43da2abed7\",\r\n    \"technicianId\": \"6905e13769152d9c37863e54\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/assign-technician",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"assign-technician"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking Manage Status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjYwMTEyMSwiZXhwIjoxNzYyNjAyMDIxfQ.y9dwAnQRyZvQiya50XZhcraMALWMkKylhAlcQAgyo70",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"bookingId\": \"690f28bf3f171f43da2abed7\",\r\n    \"status\": \"IN_PROGRESS\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/manage/status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"manage",
+										"status"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking Generate Invoice",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjYwMTEyMSwiZXhwIjoxNzYyNjAyMDIxfQ.y9dwAnQRyZvQiya50XZhcraMALWMkKylhAlcQAgyo70",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/generate-invoice/690f28bf3f171f43da2abed7",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"generate-invoice",
+										"690f28bf3f171f43da2abed7"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking Add Edit Order Items",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjYwMTEyMSwiZXhwIjoxNzYyNjAyMDIxfQ.y9dwAnQRyZvQiya50XZhcraMALWMkKylhAlcQAgyo70",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"bookingId\": \"690f28bf3f171f43da2abed7\",\r\n  \"orderItems\": [\r\n    {\r\n      \"item\": \"Split AC Installation\",\r\n      \"quantity\": \"1\",\r\n      \"price\": 1200\r\n    },\r\n    {\r\n      \"item\": \"Window AC Dismantle\",\r\n      \"quantity\": \"1\",\r\n      \"price\": 500\r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/order-item/add-edit",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"order-item",
+										"add-edit"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking Edit",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjYwMjYyOSwiZXhwIjoxNzYyNjAzNTI5fQ.4Rt6sKsbCr91EsCcuch4dxesVl4I0eu11ZozvNY2r1Q",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"serviceDetails\": [\r\n    {\r\n      \"service_id\": \"690f06f790309073bc0bf1dd\",\r\n      \"service_data\": {\r\n        \"_id\": \"690f06f790309073bc0bf1dd\",\r\n        \"name\": \"Sterilization\",\r\n        \"icon\": \"https://acdoctor-service-booking-system.s3.ap-south-1.amazonaws.com/prod/service/banner/Strerilization.png\",\r\n        \"category\": \"AMC\",\r\n        \"key\": \"STERILIZATION\"\r\n      },\r\n      \"services\": [],\r\n      \"serviceType\": \"AC Repair\",\r\n      \"quantity\": \"1\",\r\n      \"acType\": \"SPLIT\",\r\n      \"place\": \"\",\r\n      \"comment\": \"Please check cooling issue\",\r\n      \"otherService\": \"\"\r\n    }\r\n  ],\r\n  \"addressId\": \"690f1f48bf4ad511b8877c6c\",\r\n  \"slot\": \"FIRST_HALF\",\r\n  \"date\": \"2025-11-10\",\r\n  \"amount\": 1200\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/edit/690f28bf3f171f43da2abed7",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"edit",
+										"690f28bf3f171f43da2abed7"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking By Id",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking/690f28bf3f171f43da2abed7",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking",
+										"690f28bf3f171f43da2abed7"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Booking List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/booking-list?limit=10&page=1&status=BOOKED",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"booking-list"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "status",
+											"value": "BOOKED"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Technician",
+					"item": [
+						{
+							"name": "Manage KYC",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MzExMzEzNCwiZXhwIjoxNzYzMTE0MDM0fQ._RNv2wmhegf1ezBnuBb9QFas4sVFrgc0xJ9MGnLGXLo",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"type\": \"PAN\",\r\n    \"docUrl\": \"http://www.doc.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/kyc/manage/6905e13769152d9c37863e54",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"kyc",
+										"manage",
+										"6905e13769152d9c37863e54"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Technician List",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MzEyMDQ2MCwiZXhwIjoxNzYzMTIxMzYwfQ.ClAUX6cdhYdwIIK61l31HbK3Gh2itA8kcc6fDa3r0So",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/list?search=tech&active=true&page=1&limit=15&status=PENDING",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"list"
+									],
+									"query": [
+										{
+											"key": "search",
+											"value": "tech"
+										},
+										{
+											"key": "active",
+											"value": "true"
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "15"
+										},
+										{
+											"key": "status",
+											"value": "PENDING"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update KYC Status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MzEyMDQ2MCwiZXhwIjoxNzYzMTIxMzYwfQ.ClAUX6cdhYdwIIK61l31HbK3Gh2itA8kcc6fDa3r0So",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"technicianId\": \"6905e13769152d9c37863e54\",\r\n    \"action\": \"APPROVE\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/kyc-status",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"kyc-status"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Toggle Status",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MzEyMDQ2MCwiZXhwIjoxNzYzMTIxMzYwfQ.ClAUX6cdhYdwIIK61l31HbK3Gh2itA8kcc6fDa3r0So",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/status/6905e13769152d9c37863e54",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"status",
+										"6905e13769152d9c37863e54"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Available Technician List",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/list/available?page=1&limit=10",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"list",
+										"available"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Assigned Booking List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/assigned/booking/list/6905e13769152d9c37863e54?page=1&limit=10&sortby=createdAt&orderby=desc&startDate=2025-01-01&endDate=2025-01-31",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"assigned",
+										"booking",
+										"list",
+										"6905e13769152d9c37863e54"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "sortby",
+											"value": "createdAt"
+										},
+										{
+											"key": "orderby",
+											"value": "desc"
+										},
+										{
+											"key": "startDate",
+											"value": "2025-01-01"
+										},
+										{
+											"key": "endDate",
+											"value": "2025-01-31"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Technician By Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/6905e13769152d9c37863e54",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"6905e13769152d9c37863e54"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Edit Technician",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Sachin Sharma\",\r\n  \"joiningDate\": \"2025-01-10\",\r\n  \"profilePhoto\": \"https://example.com/uploads/tech123.jpg\",\r\n  \"position\": \"SENIOR TECHNICIAN\",\r\n  \"type\": \"ACD\",\r\n  \"dob\": \"1995-06-21\",\r\n  \"email\": \"sachin.sharma@example.com\",\r\n  \"secondaryContactNumber\": \"9876543211\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/edit/6905e13769152d9c37863e54",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"edit",
+										"6905e13769152d9c37863e54"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Professional Skills",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"professionalSkills\": [\r\n    {\r\n      \"acType\": \"WINDOW_AC\",\r\n      \"service\": true,\r\n      \"repair\": false,\r\n      \"install\": true\r\n    },\r\n    {\r\n      \"acType\": \"SPLIT_AC\",\r\n      \"service\": true,\r\n      \"repair\": true,\r\n      \"install\": false\r\n    },\r\n    {\r\n      \"acType\": \"TOWER_AC\",\r\n      \"service\": false,\r\n      \"repair\": true,\r\n      \"install\": true\r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/professional-skill/6905e13769152d9c37863e54",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"professional-skill",
+										"6905e13769152d9c37863e54"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Register Technician",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Sachin Sharma\",\r\n  \"phoneNumber\": \"9876543210\",\r\n  \"joiningDate\": \"2025-01-15\",\r\n  \"profilePhoto\": \"https://example.com/uploads/tech_profile.jpg\",\r\n  \"position\": \"TECHNICIAN\",\r\n  \"secondaryContactNumber\": \"9123456789\",\r\n  \"countryCode\": \"+91\",\r\n  \"type\": \"ACD\",\r\n  \"email\": \"sachin.sharma@example.com\",\r\n  \"dob\": \"1995-06-21\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/technician/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"technician",
+										"register"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Tools",
+					"item": [
+						{
+							"name": "Tools Add",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Screwdriver Set\",\r\n  \"description\": \"A high-quality magnetic screwdriver set used for AC servicing and installation.\",\r\n  \"image\": \"https://example.com/uploads/tools/screwdriver-set.png\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools/add",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools",
+										"add"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Edit",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Screwdriver\",\r\n  \"description\": \"A high-quality magnetic screwdriver set used for AC servicing and installation.\",\r\n  \"image\": \"https://example.com/uploads/tools/screwdriver-set.png\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools/edit/692159319919470f41b50f25",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools",
+										"edit",
+										"692159319919470f41b50f25"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tool Remove",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools/delete/692159319919470f41b50f25",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools",
+										"delete",
+										"692159319919470f41b50f25"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Tools Bag",
+					"item": [
+						{
+							"name": "Tools Bag Create",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Standard AC Technician Tool Bag\",\r\n  \"description\": \"Contains tools required for regular AC servicing tasks.\",\r\n  \"tools\": [\r\n    {\r\n      \"toolId\": \"673a12f4c9df8b34d8fa9012\",\r\n      \"quantity\": 2,\r\n      \"name\": \"Screwdriver Set\",\r\n      \"description\": \"Magnetic screwdriver set for opening AC panels.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1307c9df8b34d8fa9013\",\r\n      \"quantity\": 1,\r\n      \"name\": \"Pipe Wrench\",\r\n      \"description\": \"Used for tightening and loosening pipe fittings.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1315c9df8b34d8fa9014\",\r\n      \"quantity\": 3,\r\n      \"name\": \"Insulation Tape\",\r\n      \"description\": \"Used for wire insulation and securing joints.\"\r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools-bag/create",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools-bag",
+										"create"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Bag Edit",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Standard AC Technician Tool Bag\",\r\n  \"description\": \"Contains tools required for regular AC servicing tasks.\",\r\n  \"tools\": [\r\n    {\r\n      \"toolId\": \"673a12f4c9df8b34d8fa9012\",\r\n      \"quantity\": 2,\r\n      \"name\": \"Screwdriver Set\",\r\n      \"description\": \"Magnetic screwdriver set for opening AC panels.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1307c9df8b34d8fa9013\",\r\n      \"quantity\": 1,\r\n      \"name\": \"Pipe Wrench\",\r\n      \"description\": \"Used for tightening and loosening pipe fittings.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1315c9df8b34d8fa9014\",\r\n      \"quantity\": 3,\r\n      \"name\": \"Insulation Tape\",\r\n      \"description\": \"Used for wire insulation and securing joints.\"\r\n    }\r\n  ]\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools-bag/edit/69215fd4b4e454d16ec45aa5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools-bag",
+										"edit",
+										"69215fd4b4e454d16ec45aa5"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Bag List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Standard AC Technician Tool Bag\",\r\n  \"description\": \"Contains tools required for regular AC servicing tasks.\",\r\n  \"tools\": [\r\n    {\r\n      \"toolId\": \"673a12f4c9df8b34d8fa9012\",\r\n      \"quantity\": 2,\r\n      \"name\": \"Screwdriver Set\",\r\n      \"description\": \"Magnetic screwdriver set for opening AC panels.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1307c9df8b34d8fa9013\",\r\n      \"quantity\": 1,\r\n      \"name\": \"Pipe Wrench\",\r\n      \"description\": \"Used for tightening and loosening pipe fittings.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1315c9df8b34d8fa9014\",\r\n      \"quantity\": 3,\r\n      \"name\": \"Insulation Tape\",\r\n      \"description\": \"Used for wire insulation and securing joints.\"\r\n    }\r\n  ]\r\n}\r\n"
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools-bag/list",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools-bag",
+										"list"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Bag Get By Id",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Standard AC Technician Tool Bag\",\r\n  \"description\": \"Contains tools required for regular AC servicing tasks.\",\r\n  \"tools\": [\r\n    {\r\n      \"toolId\": \"673a12f4c9df8b34d8fa9012\",\r\n      \"quantity\": 2,\r\n      \"name\": \"Screwdriver Set\",\r\n      \"description\": \"Magnetic screwdriver set for opening AC panels.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1307c9df8b34d8fa9013\",\r\n      \"quantity\": 1,\r\n      \"name\": \"Pipe Wrench\",\r\n      \"description\": \"Used for tightening and loosening pipe fittings.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1315c9df8b34d8fa9014\",\r\n      \"quantity\": 3,\r\n      \"name\": \"Insulation Tape\",\r\n      \"description\": \"Used for wire insulation and securing joints.\"\r\n    }\r\n  ]\r\n}\r\n"
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools-bag/69215fd4b4e454d16ec45aa5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools-bag",
+										"69215fd4b4e454d16ec45aa5"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Bag Delete",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"name\": \"Standard AC Technician Tool Bag\",\r\n  \"description\": \"Contains tools required for regular AC servicing tasks.\",\r\n  \"tools\": [\r\n    {\r\n      \"toolId\": \"673a12f4c9df8b34d8fa9012\",\r\n      \"quantity\": 2,\r\n      \"name\": \"Screwdriver Set\",\r\n      \"description\": \"Magnetic screwdriver set for opening AC panels.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1307c9df8b34d8fa9013\",\r\n      \"quantity\": 1,\r\n      \"name\": \"Pipe Wrench\",\r\n      \"description\": \"Used for tightening and loosening pipe fittings.\"\r\n    },\r\n    {\r\n      \"toolId\": \"673a1315c9df8b34d8fa9014\",\r\n      \"quantity\": 3,\r\n      \"name\": \"Insulation Tape\",\r\n      \"description\": \"Used for wire insulation and securing joints.\"\r\n    }\r\n  ]\r\n}\r\n"
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools-bag/delete/69215fd4b4e454d16ec45aa5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools-bag",
+										"delete",
+										"69215fd4b4e454d16ec45aa5"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Bag Manage",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"toolId\": \"673a12f4c9df8b34d8fa9012\",\r\n  \"name\": \"Voltage Tester\",\r\n  \"quantity\": 1,\r\n  \"description\": \"Used for checking electrical current.\",\r\n  \"action\": \"add\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools-bag/manage-tools/69215fd4b4e454d16ec45aa5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools-bag",
+										"manage-tools",
+										"69215fd4b4e454d16ec45aa5"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Tools Request",
+					"item": [
+						{
+							"name": "Tools Request",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"technicianId\": \"6791c3f63f18a65e4d1f2b90\",\r\n  \"identifier\": \"678fa72d89b1f93c245801ab\",\r\n  \"name\": \"Digital Multimeter\",\r\n  \"quantity\": 2,\r\n  \"type\": \"TOOL\",\r\n  \"reason\": \"BROKEN\",\r\n  \"description\": \"Old multimeter stopped working unexpectedly.\",\r\n  \"comment\": \"Need urgent replacement\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools/request",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools",
+										"request"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Request List",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"technicianId\": \"6791c3f63f18a65e4d1f2b90\",\r\n  \"identifier\": \"678fa72d89b1f93c245801ab\",\r\n  \"name\": \"Digital Multimeter\",\r\n  \"quantity\": 2,\r\n  \"type\": \"TOOL\",\r\n  \"reason\": \"BROKEN\",\r\n  \"description\": \"Old multimeter stopped working unexpectedly.\",\r\n  \"comment\": \"Need urgent replacement\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools/request/list",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools",
+										"request",
+										"list"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Tools Request Update Status",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"requestId\": \"6792ab4e91c7f72cd87a1234\",\r\n  \"status\": \"APPROVED\",\r\n  \"comment\": \"Approved by admin. Proceed with assignment.\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3000/api/v1/admin/tools/request/update-status/6921b291fe66b752d91bd9b5",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3000",
+									"path": [
+										"api",
+										"v1",
+										"admin",
+										"tools",
+										"request",
+										"update-status",
+										"6921b291fe66b752d91bd9b5"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Register Admin",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"countryCode\" : \"+91\",\r\n    \"phoneNumber\": \"8839949908\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Admin",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"countryCode\" : \"+91\",\r\n    \"phoneNumber\": \"8839949908\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Admin OTP",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"adminId\":\"68ecc72e960c128f7e2b1671\",\r\n    \"otp\": \"1357\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/verify-otp",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"verify-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Admin OTP",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"adminId\": \"68ecc72e960c128f7e2b1671\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/resend-otp",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"resend-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Admin AccessToken",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/refresh",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Profile Admin",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU4MTI3MywiZXhwIjoxNzYyNTgyMTczfQ.TFRMsiX6fXeEr1KZqSFci0J5IeHKuSDbwReTqvyGM94",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/profile/68ecc72e960c128f7e2b1671",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"profile",
+								"68ecc72e960c128f7e2b1671"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admins List",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU4MTI3MywiZXhwIjoxNzYyNTgyMTczfQ.TFRMsiX6fXeEr1KZqSFci0J5IeHKuSDbwReTqvyGM94",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/all",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU4MTI3MywiZXhwIjoxNzYyNTgyMTczfQ.TFRMsiX6fXeEr1KZqSFci0J5IeHKuSDbwReTqvyGM94",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/68ecc72e960c128f7e2b1671",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"68ecc72e960c128f7e2b1671"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWNjNzJlOTYwYzEyOGY3ZTJiMTY3MSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MjU4MjU3MSwiZXhwIjoxNzYyNTgzNDcxfQ.PxMKFHaMTBhJPjqkYINw8o1Hoj59qDkmcPYDY029h3A",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"sachin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/admin/update/68ecc72e960c128f7e2b1671",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"update",
+								"68ecc72e960c128f7e2b1671"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Technician",
+			"item": [
+				{
+					"name": "Register Technician",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"countryCode\" : \"+91\",\r\n    \"phoneNumber\": \"8839949908\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/technician/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"technician",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login Technician",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"countryCode\" : \"+91\",\r\n    \"phoneNumber\": \"8839949908\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/technician/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"technician",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Technician OTP",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"technicianId\":\"6905e13769152d9c37863e54\",\r\n    \"otp\": \"3823\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/technician/verify-otp",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"technician",
+								"verify-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Technician OTP",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"technicianId\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/technician/resend-otp",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"technician",
+								"resend-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Technician AccessToken",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/technician/refresh",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"technician",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Profile Technician",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MDVlMTM3NjkxNTJkOWMzNzg2M2U1NCIsInBvc2l0aW9uIjoiVEJBIiwiaWF0IjoxNzYxOTk2ODU5LCJleHAiOjE3NjE5OTc3NTl9.7AjXGgxUBEgL7n8BMRzzxBwoqrdmae2AUCA9CXbdub0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/technician/profile/6905e13769152d9c37863e54",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"technician",
+								"profile",
+								"6905e13769152d9c37863e54"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"countryCode\": \"+91\",\r\n    \"phoneNumber\": \"8839949908\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"countryCode\": \"+91\",\r\n    \"phoneNumber\": \"8839949908\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify User OTP",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\":\"69060611edbd136d77646b35\",\r\n    \"otp\": \"9807\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/verify-otp",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"verify-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resend User OTP",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/resend-otp",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"resend-otp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh User AccessToken",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/refresh",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Profile User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MDYwNjExZWRiZDEzNmQ3NzY0NmIzNSIsImlhdCI6MTc2MjAwMzM5MywiZXhwIjoxNzYyMDA0MjkzfQ.eW8GezxERXiwG_3aISK9SUG9pbEwZoRivrvY1lL-TBE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/v1/user/profile/69060611edbd136d77646b35",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"v1",
+								"user",
+								"profile",
+								"69060611edbd136d77646b35"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
