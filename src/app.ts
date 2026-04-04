@@ -17,4 +17,12 @@ app.use(cookieParser());
 connectDB();
 app.use("/api/v1", adminRoutes, technicianRoutes, userRoutes, homeRoutes,enquiryRoutes);
 
+app.get("/keep-alive", (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: "Server is alive 🚀",
+    time: new Date(),
+  });
+});
+
 export default app;
