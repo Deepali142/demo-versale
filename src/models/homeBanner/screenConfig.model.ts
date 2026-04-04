@@ -3,6 +3,8 @@ import { Schema, model, Document } from "mongoose";
 export type SectionKey =
   | "TOP_BANNER"
   | "SERVICE_TYPES"
+  | "REQUEST"
+  | "UTILITIES"
   | "MIDDLE_BANNER"
   | "PRODUCT_LIST"
   | "STERILIZATION_INFO"
@@ -14,17 +16,20 @@ export type SectionType =
   | "PRODUCT_LIST"
   | "INFO";
 
+
 export interface IHomeSection {
   key: SectionKey;
   type: SectionType;
   order: number;
   isActive: boolean;
+  bannerDisplay?: "CAROUSEL" | "STATIC" | "AUTO"; 
 }
 
 export interface IHomeScreenConfig extends Document {
   appType: "USER" | "TECHNICIAN";
   screen: string;
   sections: IHomeSection[];
+  bannerDisplay?: "CAROUSEL" | "STATIC" | "AUTO";
   isActive: boolean;
 }
 
@@ -41,6 +46,11 @@ const HomeSectionSchema = new Schema<IHomeSection>(
         "STERILIZATION_INFO",
         "BOTTOM_BANNER",
       ],
+    },
+    bannerDisplay: {
+      type: String,
+      enum: ["CAROUSEL", "STATIC", "AUTO"],
+      default: "AUTO",
     },
     type: {
       type: String,

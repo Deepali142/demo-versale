@@ -15,16 +15,28 @@ export type Destination = (typeof VALID_DESTINATIONS)[number];
 export type AppType = (typeof VALID_APP_TYPES)[number];
 export type MediaType = (typeof VALID_MEDIA_TYPES)[number];
 
+import mongoose from "mongoose";
+
 export type HomeBannerPlain = {
-  _id: unknown;
+  _id: mongoose.Types.ObjectId; 
+
   appType: AppType;
+
   mediaType: MediaType;
   mediaUrl: string;
   thumbnailUrl?: string;
+
   destination: Destination;
-  position: number;
-  data?: string;
+
+  section?: "TOP" | "MIDDLE" | "BOTTOM"; 
+
+  order?: number;     
+  position?: number;  
+
+  data?: Record<string, any>; 
+
   isActive: boolean;
+
   createdAt?: Date;
   updatedAt?: Date;
 };

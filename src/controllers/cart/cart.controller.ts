@@ -4,15 +4,16 @@ import {
   getCartService,
   updateCartItemService,
   removeCartItemService,
+  AddToCartPayload,
 } from "../../services/cart/cart.service";
-
 
 export const addToCartController = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user?._id?.toString();
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -20,7 +21,42 @@ export const addToCartController = async (
       });
     }
 
-    const cart = await addToCartService(userId, req.body);
+    const {
+      serviceId,
+      name,
+      serviceType,
+      quantity,
+      unitPrice,
+      attributes,
+      category,
+      addressId,
+      slot,
+      date,
+    } = req.body;
+
+    if (!serviceId || !name || !serviceType || !unitPrice || !category || !attributes?.type) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: serviceId, name, serviceType, unitPrice, category, or attributes.type",
+      });
+    }
+
+    const payload: AddToCartPayload = {
+      serviceId,
+      name,
+      serviceType,
+      quantity,
+      unitPrice,
+      type: attributes.type,
+      ...(attributes.subType && { subType: attributes.subType }),
+      ...(attributes.variant && { variant: attributes.variant }),
+      category,
+      ...(addressId && { addressId }),
+      ...(slot && { slot }),
+      ...(date && { date }),
+    };
+
+    const cart = await addToCartService(userId, payload);
 
     return res.status(200).json({
       success: true,
@@ -34,7 +70,6 @@ export const addToCartController = async (
     });
   }
 };
-
 export const getCartController = async (
   req: Request,
   res: Response,

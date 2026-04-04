@@ -1,18 +1,34 @@
 import { Schema, model, Document } from "mongoose";
 
+export type BannerLayout = "SMALL" | "BANNER";
+
 export interface IHomeBanner extends Document {
   appType: "USER" | "TECHNICIAN";
+
   mediaType: "IMAGE" | "VIDEO";
   mediaUrl: string;
   thumbnailUrl?: string;
+
   section: "TOP" | "MIDDLE" | "BOTTOM";
-  destination: "COUPON" | "AD" | "HOME" | "PARTNER" | "HOW_IT_WORK" | "STERILIZATION";
-  position: number;
+
+  destination:
+    | "COUPON"
+    | "AD"
+    | "HOME"
+    | "PARTNER"
+    | "HOW_IT_WORK"
+    | "STERILIZATION";
+
+  layoutType: BannerLayout; 
+
+  order: number; 
+
   data?: string;
+
   isActive: boolean;
+
   createdAt?: Date;
   updatedAt?: Date;
-  order: number;
 }
 
 const HomeBannerSchema = new Schema<IHomeBanner>(
@@ -26,8 +42,9 @@ const HomeBannerSchema = new Schema<IHomeBanner>(
     section: {
       type: String,
       enum: ["TOP", "MIDDLE", "BOTTOM"],
-      default: "TOP",
+      required: true,
     },
+
     mediaType: {
       type: String,
       enum: ["IMAGE", "VIDEO"],
@@ -43,16 +60,28 @@ const HomeBannerSchema = new Schema<IHomeBanner>(
       type: String,
     },
 
-    order: {  type: Number, required: true, default: 0 },
+    layoutType: {
+      type: String,
+      enum: ["SMALL", "BANNER"],
+      default: "BANNER",
+    },
+
+    order: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
 
     destination: {
       type: String,
-      enum: ["COUPON", "AD", "HOME", "PARTNER", "HOW_IT_WORK","STERILIZATION"],
-      required: true,
-    },
-
-    position: {
-      type: Number,
+      enum: [
+        "COUPON",
+        "AD",
+        "HOME",
+        "PARTNER",
+        "HOW_IT_WORK",
+        "STERILIZATION",
+      ],
       required: true,
     },
 
@@ -70,9 +99,9 @@ const HomeBannerSchema = new Schema<IHomeBanner>(
   },
 );
 
-// HomeBannerSchema.index(
-//   { destination: 1, position: 1 },
-//   { unique: false },
-// );
+HomeBannerSchema.index({ appType: 1, section: 1, order: 1 });
 
-export const HomeBanner = model<IHomeBanner>("HomeBanner", HomeBannerSchema);
+export const HomeBanner = model<IHomeBanner>(
+  "HomeBanner",
+  HomeBannerSchema,
+);

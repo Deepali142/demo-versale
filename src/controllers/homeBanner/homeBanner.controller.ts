@@ -3,7 +3,6 @@ import {
   deleteHomeBannerService,
   editHomeBannerService,
   getHomeBannerListService,
-  GetHomeBannerParams,
   saveHomeBannerService,
   VALID_APP_TYPES,
   VALID_DESTINATIONS,
@@ -16,6 +15,7 @@ import {
 // ================== TYPES ==================
 
 type BannerSection = "TOP" | "MIDDLE" | "BOTTOM";
+type BannerDisplay = "CAROUSEL" | "STATIC" | "AUTO";
 
 type EditHomeBannerPayload = {
   appType?: AppType;
@@ -27,12 +27,23 @@ type EditHomeBannerPayload = {
   data?: string;
   isActive?: boolean;
   section?: BannerSection;
-  order?: number | undefined;
+  order?: number;
+  bannerDisplay?: BannerDisplay;
 };
 
 interface ToggleBannerParams {
   bannerId: string;
 }
+
+// ================== CONSTANTS ==================
+
+const VALID_SECTIONS: BannerSection[] = ["TOP", "MIDDLE", "BOTTOM"];
+const VALID_MEDIA_TYPES: MediaType[] = ["IMAGE", "VIDEO"];
+const VALID_BANNER_DISPLAY: BannerDisplay[] = [
+  "CAROUSEL",
+  "STATIC",
+  "AUTO",
+];
 
 // ================== ADD ==================
 
@@ -47,27 +58,16 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       position,
       data,
       section,
+      bannerDisplay,
       order,
-    } = req.body as {
-      appType?: AppType;
-      mediaType?: MediaType;
-      mediaUrl?: string;
-      thumbnailUrl?: string;
-      destination?: Destination;
-      position?: number;
-      data?: string;
-      section?: BannerSection;
-      order: number;
-    };
+    } = req.body;
 
-    //  Allowed values
-    const VALID_SECTIONS = ["TOP", "MIDDLE", "BOTTOM"];
-
-    // Validation
+    // ✅ Validation
     if (
       !appType ||
       !VALID_APP_TYPES.includes(appType) ||
       !mediaType ||
+      !VALID_MEDIA_TYPES.includes(mediaType) ||
       !mediaUrl ||
       !destination ||
       !VALID_DESTINATIONS.includes(destination) ||
@@ -79,11 +79,14 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       });
     }
 
-    // Section default + validation
-    const finalSection: "TOP" | "MIDDLE" | "BOTTOM" =
+    const finalSection: BannerSection =
       section && VALID_SECTIONS.includes(section) ? section : "TOP";
 
-    // Clean payload
+    const finalDisplay: BannerDisplay =
+      bannerDisplay && VALID_BANNER_DISPLAY.includes(bannerDisplay)
+        ? bannerDisplay
+        : "STATIC";
+
     const payload = {
       appType,
       mediaType,
@@ -91,6 +94,7 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       destination,
       position,
       section: finalSection,
+      bannerDisplay: finalDisplay,
       order,
       ...(thumbnailUrl && { thumbnailUrl }),
       ...(data && { data }),
@@ -103,12 +107,8 @@ export const addHomeBanner = async (req: Request, res: Response) => {
       message: "Home banner saved successfully",
       data: result,
     });
-  } catch (error: unknown) {
-    const errMsg =
-      error instanceof Error ? error.message : "Unexpected error occurred";
-
-    // Better duplicate handling
-    if (errMsg.includes("duplicate key") || (error as any)?.code === 11000) {
+  } catch (error: any) {
+    if (error?.code === 11000) {
       return res.status(400).json({
         success: false,
         message:
@@ -119,7 +119,7 @@ export const addHomeBanner = async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       message: "Something went wrong",
-      error: errMsg,
+      error: error?.message,
     });
   }
 };
@@ -136,6 +136,7 @@ export const editHomeBanner = async (req: Request, res: Response) => {
         message: "Home banner ID is required",
       });
     }
+
     const {
       appType,
       mediaType,
@@ -146,63 +147,67 @@ export const editHomeBanner = async (req: Request, res: Response) => {
       data,
       isActive,
       section,
-      order
+      order,
+      bannerDisplay,
     } = req.body as EditHomeBannerPayload;
-    
 
-    //  Allowed values
-    const VALID_SECTIONS = ["TOP", "MIDDLE", "BOTTOM"];
+    // ✅ VALIDATIONS
 
-    // Validate enums if provided
     if (appType && !VALID_APP_TYPES.includes(appType)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid appType",
-      });
+      return res.status(400).json({ success: false, message: "Invalid appType" });
     }
 
     if (destination && !VALID_DESTINATIONS.includes(destination)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid destination",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid destination" });
     }
 
-    if (mediaType && !["IMAGE", "VIDEO"].includes(mediaType)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid mediaType",
-      });
+    if (mediaType && !VALID_MEDIA_TYPES.includes(mediaType)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid mediaType" });
     }
 
     if (section && !VALID_SECTIONS.includes(section)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid section" });
+    }
+
+    if (bannerDisplay && !VALID_BANNER_DISPLAY.includes(bannerDisplay)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid section",
+        message: "Invalid bannerDisplay",
       });
     }
 
     if (position !== undefined && typeof position !== "number") {
-      return res.status(400).json({
-        success: false,
-        message: "Position must be a number",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Position must be a number" });
     }
-    //  Clean payload
+
+    if (order !== undefined && typeof order !== "number") {
+      return res
+        .status(400)
+        .json({ success: false, message: "Order must be a number" });
+    }
+
+    // ✅ CLEAN PAYLOAD
     const payload: EditHomeBannerPayload = {
-      ...(appType && { appType }),
-      ...(mediaType && { mediaType }),
-      ...(mediaUrl && { mediaUrl }),
-      ...(thumbnailUrl && { thumbnailUrl }),
-      ...(destination && { destination }),
+      ...(appType !== undefined && { appType }),
+      ...(mediaType !== undefined && { mediaType }),
+      ...(mediaUrl !== undefined && { mediaUrl }),
+      ...(thumbnailUrl !== undefined && { thumbnailUrl }),
+      ...(destination !== undefined && { destination }),
       ...(position !== undefined && { position }),
       ...(data !== undefined && { data }),
       ...(isActive !== undefined && { isActive }),
-      ...(section && { section }),
+      ...(section !== undefined && { section }),
       ...(order !== undefined && { order }),
-        
+      ...(bannerDisplay !== undefined && { bannerDisplay }),
     };
-    
 
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({
@@ -213,14 +218,13 @@ export const editHomeBanner = async (req: Request, res: Response) => {
 
     const updatedHomeBanner = await editHomeBannerService(
       homeBannerId,
-      payload,
+      payload
     );
 
     if (!updatedHomeBanner) {
       return res.status(404).json({
         success: false,
         message: "Home banner not found",
-        data: null,
       });
     }
 
@@ -229,23 +233,18 @@ export const editHomeBanner = async (req: Request, res: Response) => {
       message: "Home banner updated successfully",
       data: updatedHomeBanner,
     });
-  } catch (error: unknown) {
-    const errMsg =
-      error instanceof Error ? error.message : "Unexpected error occurred";
-
-    // Better duplicate handling
-    if (errMsg.includes("duplicate key") || (error as any)?.code === 11000) {
+  } catch (error: any) {
+    if (error?.code === 11000) {
       return res.status(400).json({
         success: false,
-        message:
-          "Banner already exists at this position for this appType + section",
+        message: "Duplicate banner order for this section",
       });
     }
 
     return res.status(500).json({
       success: false,
       message: "Something went wrong",
-      error: errMsg,
+      error: error?.message,
     });
   }
 };
@@ -254,43 +253,18 @@ export const editHomeBanner = async (req: Request, res: Response) => {
 
 export const getHomeBannerList = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
-    const {
-      sortby,
-      orderby,
-      appType,
-      destination,
-      section,
-      isActive,
-    } = req.query as {
-      sortby?: string;
-      orderby?: string;
-      appType?: AppType;
-      destination?: string;
-      section?: "TOP" | "MIDDLE" | "BOTTOM";
-      isActive?: string;
-    };
+    const { appType, destination, section, isActive } = req.query;
 
-    // Sorting logic
-    const sortOrder: 1 | -1 = orderby === "desc" ? -1 : 1;
-
-    // Default sorting: position → order
-    const sort: any =
-      sortby === "createdAt" || sortby === "updatedAt"
-        ? { [sortby]: sortOrder }
-        : { position: 1, order: 1 };
-
-    // Validate appType
-    if (appType && !VALID_APP_TYPES.includes(appType)) {
+    if (appType && !VALID_APP_TYPES.includes(appType as AppType)) {
       return res.status(400).json({
         success: false,
         message: "Invalid appType",
       });
     }
 
-    // Validate destination
     let typedDestination: Destination | undefined;
     if (destination) {
       if (!VALID_DESTINATIONS.includes(destination as Destination)) {
@@ -302,29 +276,24 @@ export const getHomeBannerList = async (
       typedDestination = destination as Destination;
     }
 
-    //  Validate section
-    let typedSection: "TOP" | "MIDDLE" | "BOTTOM" | undefined;
+    let typedSection: BannerSection | undefined;
     if (section) {
-      const VALID_SECTIONS = ["TOP", "MIDDLE", "BOTTOM"];
-      if (!VALID_SECTIONS.includes(section)) {
+      if (!VALID_SECTIONS.includes(section as BannerSection)) {
         return res.status(400).json({
           success: false,
           message: "Invalid section",
         });
       }
-      typedSection = section;
+      typedSection = section as BannerSection;
     }
 
-    // Convert isActive
     let activeFilter: boolean | undefined;
     if (isActive !== undefined) {
       activeFilter = isActive === "true";
     }
 
-    //  Build payload
-    const payload: any = {
-      sort,
-      ...(appType && { appType }),
+    const payload = {
+      ...(appType && { appType: appType as AppType }),
       ...(typedDestination && { destination: typedDestination }),
       ...(typedSection && { section: typedSection }),
       ...(activeFilter !== undefined && { isActive: activeFilter }),
@@ -336,12 +305,11 @@ export const getHomeBannerList = async (
       success: true,
       data: banners,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     return res.status(500).json({
       success: false,
-      message: "An error occurred while fetching the home banner list.",
-      error:
-        error instanceof Error ? error.message : "Unexpected error occurred",
+      message: "Error fetching banners",
+      error: error?.message,
     });
   }
 };
@@ -350,7 +318,7 @@ export const getHomeBannerList = async (
 
 export const deleteHomeBanner = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
     const { bannerId } = req.params;
@@ -375,28 +343,20 @@ export const deleteHomeBanner = async (
       success: true,
       message: "Home banner deleted successfully",
     });
-  } catch (error: unknown) {
-    const errMsg =
-      error instanceof Error ? error.message : "Unexpected error occurred";
-
-    if (errMsg.includes("Invalid banner ID")) {
-      return res.status(400).json({
-        success: false,
-        message: errMsg,
-      });
-    }
-
+  } catch (error: any) {
     return res.status(500).json({
       success: false,
       message: "Something went wrong",
-      error: errMsg,
+      error: error?.message,
     });
   }
 };
 
+// ================== TOGGLE ==================
+
 export const toggleBannerStatusController = async (
   req: Request<ToggleBannerParams>,
-  res: Response,
+  res: Response
 ): Promise<Response> => {
   try {
     const { bannerId } = req.params;
@@ -404,16 +364,14 @@ export const toggleBannerStatusController = async (
     const updatedBanner = await toggleBannerStatusService(bannerId);
 
     return res.status(200).json({
-      status: true,
+      success: true,
       message: "Banner status updated successfully",
       data: updatedBanner,
     });
-  } catch (error) {
-    console.error("Toggle Banner Error:", error);
-
+  } catch (error: any) {
     return res.status(500).json({
-      status: false,
-      message: error instanceof Error ? error.message : "Something went wrong",
+      success: false,
+      message: error?.message || "Something went wrong",
     });
   }
 };

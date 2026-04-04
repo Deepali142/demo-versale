@@ -3,23 +3,91 @@ import {
   DashboardSectionResponse,
   getDashboardItemsService,
 } from "../dashboard/dashboard.service";
-// services/homeConfig/homeConfig.service.ts
 
 import { AppType, Screen } from "../../types/config.types";
 import { HomeBannerPlain } from "../../types/homeBanner.types";
 import { HomeScreenConfig } from "../../models/homeBanner/screenConfig.model";
+import { SECTION, SectionType } from "../../types/section.types";
+
 
 // --------------------
-interface HomeScreenResponse {
-  banners: HomeBannerPlain[];
-  dashboard: DashboardSectionResponse[];
-}
+// TYPES
+// --------------------
 
-type HomeSectionResponse =
-  | { type: "BANNER"; section: "TOP" | "MIDDLE" | "BOTTOM"; data: any[] }
-  | { type: "DASHBOARD"; section: string; data: any[] }
-  | { type: "PRODUCT_LIST"; section: string; data: any[] }
-  | { type: "INFO"; section: string; data: any[] };
+type BannerDisplay = "CAROUSEL" | "STATIC" | "AUTO";
+type BannerSectionKey = "TOP" | "MIDDLE" | "BOTTOM";
+
+// All possible section keys
+export type SectionKey =
+  | "TOP_BANNER"
+  | "SERVICE_TYPES"
+  | "REQUEST"
+  | "UTILITIES"
+  | "MIDDLE_BANNER"
+  | "PRODUCT_LIST"
+  | "STERILIZATION_INFO"
+  | "BOTTOM_BANNER";
+
+export type HomeSectionResponse =
+  | {
+      type: "BANNER";
+      section: BannerSectionKey;
+      bannerDisplay: BannerDisplay;
+      items: HomeBannerPlain[];
+    }
+  | {
+      type: "DASHBOARD";
+      section: string;
+      title: string;
+      items: ReturnType<typeof formatDashboardItems>;
+    }
+  |  {
+      type: "UTILITIES"; 
+      section: "UTILITIES";
+      title: string;
+      items: ReturnType<typeof formatDashboardItems>;
+     }
+  |  {
+      type: "PRODUCT_LIST";
+      section: string;
+      items: unknown[];
+      isVisible?: boolean;
+    }
+  | {
+      type: "INFO";
+      section: string;
+      items: { title: string; description: string }[];
+    };
+
+// --------------------
+// HELPERS (MOVE ABOVE FOR TS)
+// --------------------
+
+const formatDashboardItems = (items: any[]) => {
+  return items
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .map((item) => ({
+      _id: item._id,
+      name: item.name,
+      iconUrl: item.iconUrl,
+      position: item.position,
+      action: {
+        type: item.actionType,
+        id: item.service?._id ?? item.actionValue ?? null,
+      },
+      service: item.service
+        ? {
+            _id: item.service._id,
+            name: item.service.name,
+            unitPrice: item.service.unitPrice,
+          }
+        : null,
+    }));
+};
+
+// --------------------
+// SERVICE
+// --------------------
 
 export const getHomeScreenService = async (
   appType: AppType,
@@ -45,76 +113,146 @@ export const getHomeScreenService = async (
     }).lean(),
   ]);
 
-  const bannerList = Array.isArray(banners) ? banners : [];
-  const dashboardList = Array.isArray(dashboard) ? dashboard : [];
-
   if (!config?.sections?.length) {
     console.warn("No config found → returning empty");
     return [];
   }
 
-  const bannerMap = {
+  const bannerList: HomeBannerPlain[] = Array.isArray(banners) ? banners : [];
+  const dashboardList: DashboardSectionResponse[] = Array.isArray(dashboard)
+    ? dashboard
+    : [];
+
+  // ✅ Banner grouping
+  const bannerMap: Record<"TOP" | "MIDDLE" | "BOTTOM", HomeBannerPlain[]> = {
     TOP: bannerList.filter((b) => b.section === "TOP"),
     MIDDLE: bannerList.filter((b) => b.section === "MIDDLE"),
     BOTTOM: bannerList.filter((b) => b.section === "BOTTOM"),
   };
 
+  // ✅ Dashboard map (fix from your old logic)
+  const dashboardMap = new Map(
+    dashboardList.map((d) => [d.section, d]),
+  );
+
   const sortedSections = config.sections
-    .filter((s) => s.isActive)
-    .sort((a, b) => a.order - b.order);
+    .filter((s: any) => s.isActive)
+    .sort((a: any, b: any) => a.order - b.order);
 
   const response: HomeSectionResponse[] = [];
 
+  // --------------------
+  // HELPERS
+  // --------------------
+
   const handleBanner = (
     sectionKey: "TOP" | "MIDDLE" | "BOTTOM",
-    bannerMap: any,
-    response: HomeSectionResponse[],
+    bannerDisplay?: BannerDisplay,
   ) => {
-    const data = bannerMap[sectionKey].sort(
-      (a: any, b: any) => (a.order ?? 0) - (b.order ?? 0),
+    const items = [...bannerMap[sectionKey]].sort(
+      (a, b) =>
+        (a.order ?? 0) - (b.order ?? 0) ||
+        (a.position ?? 0) - (b.position ?? 0),
     );
 
-    if (data.length) {
-      response.push({
-        type: "BANNER",
-        section: sectionKey,
-        data,
-      });
-    }
+    if (!items.length) return;
+
+    response.push({
+      type: "BANNER",
+      section: sectionKey,
+      bannerDisplay: bannerDisplay ?? "AUTO",
+      items, // ✅ FIXED (was data)
+    });
   };
 
+  const formatDashboardItems = (items: any[]) =>
+    items
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map((item) => ({
+        _id: item._id,
+        name: item.name,
+        iconUrl: item.iconUrl,
+        position: item.position,
+        action: {
+          type: item.actionType,
+          id: item.service?._id ?? item.actionValue ?? null,
+        },
+        service: item.service
+          ? {
+              _id: item.service._id,
+              name: item.service.name,
+              unitPrice: item.service.unitPrice,
+            }
+          : null,
+      }));
+
+  // --------------------
+  // MAIN LOOP
+  // --------------------
+
   for (const sec of sortedSections) {
+    const bannerDisplay = sec.bannerDisplay as BannerDisplay | undefined;
+
     switch (sec.key) {
       case "TOP_BANNER":
-        handleBanner("TOP", bannerMap, response);
+        handleBanner("TOP", bannerDisplay);
         break;
 
       case "SERVICE_TYPES": {
-        const dashboardSection = dashboardList[0];
 
-        if (dashboardSection?.items?.length) {
-          const items = [...dashboardSection.items].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-          );
+        const booking = dashboardMap.get("BOOKING"); // or SECTION.BOOKING if defined
 
+        console.log("🚀 Booking Section:", booking);
+
+        if (booking?.items?.length) {
           response.push({
             type: "DASHBOARD",
-            section: dashboardSection.title || "Services",
-            data: items,
+            section: "SERVICE_TYPES",
+            title: booking.title || "Services",
+            items: formatDashboardItems(booking.items), 
+          });
+        }
+        break;
+      }
+
+      case "REQUEST": {
+        const request = dashboardMap.get(SECTION.REQUEST);
+
+        if (request?.items?.length) {
+          response.push({
+            type: "DASHBOARD",
+            section: "REQUEST",
+            title: request.title || "Request",
+            items: formatDashboardItems(request.items),
+          });
+        }
+        break;
+      }
+
+      case "UTILITIES": {
+        const utilities = dashboardMap.get(SECTION.UTILITIES);
+
+        if (utilities?.items?.length) {
+          response.push({
+            type: "UTILITIES",
+            section: "UTILITIES",
+            title: utilities.title || "Utilities",
+            items: formatDashboardItems(utilities.items),
           });
         }
         break;
       }
 
       case "MIDDLE_BANNER":
-        handleBanner("MIDDLE", bannerMap, response);
+        handleBanner("MIDDLE", bannerDisplay);
         break;
 
       case "PRODUCT_LIST":
         response.push({
           type: "PRODUCT_LIST",
           section: "PRODUCTS",
-          data: [],
+          items: [], // ✅ FIXED (was data)
+          isVisible: false,
         });
         break;
 
@@ -122,7 +260,7 @@ export const getHomeScreenService = async (
         response.push({
           type: "INFO",
           section: "STERILIZATION",
-          data: [
+          items: [
             {
               title: "Deep Cleaning",
               description: "Kills bacteria, fungus & odor",
@@ -136,27 +274,29 @@ export const getHomeScreenService = async (
         break;
 
       case "BOTTOM_BANNER":
-        handleBanner("BOTTOM", bannerMap, response);
+        handleBanner("BOTTOM", bannerDisplay);
         break;
 
       default:
         console.warn(`Unhandled section key: ${sec.key}`);
-        break;
     }
   }
+
   return response;
 };
 
 // --------------------
-// CREATE
+// CONFIG SERVICES
 // --------------------
+
 export const createHomeConfigService = async (payload: {
   appType: AppType;
   screen: Screen;
   sections: {
-    key: string;
+    key: SectionKey;
     order: number;
     isActive?: boolean;
+    bannerDisplay?: BannerDisplay;
   }[];
 }) => {
   const exists = await HomeScreenConfig.findOne({
@@ -165,20 +305,17 @@ export const createHomeConfigService = async (payload: {
   });
 
   if (exists) {
-    throw new Error("Config already exists for this appType + screen");
+    throw new Error("Config already exists");
   }
 
-  return await HomeScreenConfig.create(payload);
+  return HomeScreenConfig.create(payload);
 };
 
-// --------------------
-// GET LIST
-// --------------------
 export const getHomeConfigListService = async (filters: {
   appType?: AppType;
   screen?: Screen;
 }) => {
-  return await HomeScreenConfig.find({
+  return HomeScreenConfig.find({
     ...(filters.appType && { appType: filters.appType }),
     ...(filters.screen && { screen: filters.screen }),
   })
@@ -186,29 +323,20 @@ export const getHomeConfigListService = async (filters: {
     .lean();
 };
 
-// --------------------
-// GET SINGLE
-// --------------------
 export const getHomeConfigByIdService = async (id: string) => {
   const config = await HomeScreenConfig.findById(id).lean();
-
-  if (!config) {
-    throw new Error("Config not found");
-  }
-
+  if (!config) throw new Error("Config not found");
   return config;
 };
 
-// --------------------
-// UPDATE
-// --------------------
 export const updateHomeConfigService = async (
   id: string,
   payload: Partial<{
     sections: {
-      key: string;
+      key: SectionKey;
       order: number;
       isActive?: boolean;
+      bannerDisplay?: BannerDisplay;
     }[];
     isActive: boolean;
   }>,
@@ -217,22 +345,12 @@ export const updateHomeConfigService = async (
     new: true,
   }).lean();
 
-  if (!updated) {
-    throw new Error("Config not found for update");
-  }
-
+  if (!updated) throw new Error("Config not found");
   return updated;
 };
 
-// --------------------
-// DELETE
-// --------------------
 export const deleteHomeConfigService = async (id: string) => {
   const deleted = await HomeScreenConfig.findByIdAndDelete(id);
-
-  if (!deleted) {
-    throw new Error("Config not found for deletion");
-  }
-
+  if (!deleted) throw new Error("Config not found");
   return { message: "Config deleted successfully" };
 };

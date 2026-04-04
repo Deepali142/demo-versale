@@ -13,6 +13,8 @@ export type Screen =
 export type SectionKey =
   | "TOP_BANNER"
   | "SERVICE_TYPES"
+  | "REQUEST"
+  | "UTILITIES"
   | "MIDDLE_BANNER"
   | "BOTTOM_BANNER"
   | "PRODUCT_LIST"

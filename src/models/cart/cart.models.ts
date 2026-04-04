@@ -90,20 +90,6 @@ const cartSchema = new Schema<ICart>(
       default: [],
     },
 
-    addressId: {
-      type: Types.ObjectId,
-      ref: "Address",
-    },
-
-    slot: {
-      type: String,
-      enum: ["FIRST_HALF", "SECOND_HALF", "FULL_DAY"],
-    },
-
-    date: {
-      type: Date,
-    },
-
     itemTotal: {
       type: Number,
       default: 0,

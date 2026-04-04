@@ -1,41 +1,77 @@
-import mongoose, { FilterQuery } from "mongoose";
+import mongoose from "mongoose";
 import {
   DashboardItem,
   IDashboardItem,
 } from "../../models/dashboard/dashboard.model";
 
+import { SECTION, SectionType } from "../../types/section.types";
+
+const data: Record<SectionType, any> = {
+  SERVICE_TYPES: { title: "Services", items: [] },
+  BOOKING: { title: "Booking", items: [] },
+  REQUEST: { title: "Request", items: [] },
+  UTILITIES: { title: "Utilities", items: [] },
+  TOP_BANNER: null,
+  MIDDLE_BANNER: null,
+  BOTTOM_BANNER: null,
+  PRODUCT_LIST: [],
+  STERILIZATION_INFO: [],
+};
 // --------------------
 // TYPES
 // --------------------
-type AppType = "USER" | "TECHNICIAN";
+
+export type AppType = "USER" | "TECHNICIAN";
 
 interface GetDashboardParams {
   appType?: AppType;
   screen?: string;
 }
 
+export interface DashboardItemResponse {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  iconUrl: string;
+  position: number;
+  actionType?: "SERVICE" | "NAVIGATE" | "API";
+  actionValue?: string;
+  service?: {
+    _id: mongoose.Types.ObjectId;
+    name: string;
+    unitPrice: number;
+    category: string;
+  } | null;
+  screen?: string;
+}
+
+// ✅ Section Response
 export interface DashboardSectionResponse {
-  section: string;
+  section: SectionType;
   title: string;
-  items: IDashboardItem[];
-  screens?: string[]; 
+  items: DashboardItemResponse[];
+  order?: number;
 }
 
 // --------------------
 // GET DASHBOARD (GROUPED)
+// --------------------
+
 export const getDashboardItemsService = async ({
   appType,
   screen,
 }: GetDashboardParams): Promise<DashboardSectionResponse[]> => {
-  const matchStage: any = {
+  const matchStage: Record<string, any> = {
     isActive: true,
-    screen, 
   };
 
+  // ✅ Safe filters
   if (appType) matchStage.appType = appType;
+  if (screen) matchStage.screen = screen;
 
-  const aggregation = await DashboardItem.aggregate([
+  const aggregation = await DashboardItem.aggregate<DashboardSectionResponse>([
     { $match: matchStage },
+
+    // 🔥 JOIN SERVICE
     {
       $lookup: {
         from: "services",
@@ -50,6 +86,8 @@ export const getDashboardItemsService = async ({
         preserveNullAndEmptyArrays: true,
       },
     },
+
+    // 🔥 CLEAN SERVICE OBJECT
     {
       $addFields: {
         service: {
@@ -60,6 +98,8 @@ export const getDashboardItemsService = async ({
         },
       },
     },
+
+    // 🔥 REMOVE UNUSED FIELDS
     {
       $project: {
         __v: 0,
@@ -67,7 +107,11 @@ export const getDashboardItemsService = async ({
         updatedAt: 0,
       },
     },
+
+    // 🔥 SORT ITEMS INSIDE SECTION
     { $sort: { position: 1 } },
+
+    // 🔥 GROUP BY SECTION
     {
       $group: {
         _id: "$section",
@@ -90,6 +134,8 @@ export const getDashboardItemsService = async ({
         },
       },
     },
+
+    // 🔥 SHAPE OUTPUT
     {
       $project: {
         _id: 0,
@@ -99,6 +145,7 @@ export const getDashboardItemsService = async ({
       },
     },
 
+    // 🔥 ORDER SECTIONS
     {
       $addFields: {
         order: {
@@ -119,24 +166,23 @@ export const getDashboardItemsService = async ({
     { $sort: { order: 1 } },
   ]);
 
-  return aggregation as DashboardSectionResponse[];
+  return aggregation;
 };
 
 // --------------------
 // CREATE
 // --------------------
+
 export const createDashboardItemService = async (payload: {
   name: string;
   iconUrl: string;
-  section: "QUICK_SERVICES" | "BOOKING" | "OTHER" | "REQUEST" | "UTILITIES";
+  section: SectionType;
   sectionTitle?: string;
   appType: AppType;
   position: number;
-
   screen?: string;
   parentId?: string;
   serviceId?: string;
-
   actionType?: "SERVICE" | "NAVIGATE" | "API";
   actionValue?: string;
 }): Promise<IDashboardItem> => {
@@ -148,19 +194,20 @@ export const createDashboardItemService = async (payload: {
     name: payload.name,
     iconUrl: payload.iconUrl,
     section: payload.section,
+    sectionTitle: payload.sectionTitle,
     appType: payload.appType,
     position: payload.position,
-
     screen: payload.screen || "HOME",
 
-    ...(payload.sectionTitle && { sectionTitle: payload.sectionTitle }),
+    ...(payload.parentId && {
+      parentId: new mongoose.Types.ObjectId(payload.parentId),
+    }),
 
-    ...(payload.parentId && { parentId: payload.parentId }),
-
-    ...(payload.serviceId && { serviceId: payload.serviceId }),
+    ...(payload.serviceId && {
+      serviceId: new mongoose.Types.ObjectId(payload.serviceId),
+    }),
 
     ...(payload.actionType && { actionType: payload.actionType }),
-
     ...(payload.actionValue && { actionValue: payload.actionValue }),
   });
 
@@ -176,24 +223,15 @@ export const updateDashboardItemService = async (
   payload: Partial<{
     name: string;
     iconUrl: string;
-    section:
-      | "QUICK_SERVICES"
-      | "BOOKING"
-      | "OTHER"
-      | "REQUEST"
-      | "UTILITIES";
+    section: SectionType;
     sectionTitle: string;
     appType: AppType;
     position: number;
-
-    // 🔥 NEW FIELDS
     screen: string;
     parentId: string;
     serviceId: string;
-
     actionType: "SERVICE" | "NAVIGATE" | "API";
     actionValue: string;
-
     isActive: boolean;
   }>
 ): Promise<IDashboardItem | null> => {
@@ -201,31 +239,26 @@ export const updateDashboardItemService = async (
     throw new Error("Invalid dashboard item ID");
   }
 
+  const updateData: Record<string, any> = { ...payload };
+
   if (payload.serviceId) {
-    payload.serviceId = new mongoose.Types.ObjectId(payload.serviceId) as any;
+    updateData.serviceId = new mongoose.Types.ObjectId(payload.serviceId);
   }
 
   if (payload.parentId) {
-    payload.parentId = new mongoose.Types.ObjectId(payload.parentId) as any;
+    updateData.parentId = new mongoose.Types.ObjectId(payload.parentId);
   }
 
-  const cleanedPayload = Object.fromEntries(
-    Object.entries(payload).filter(([_, v]) => v !== undefined)
-  );
-
-  return DashboardItem.findByIdAndUpdate(
-    id,
-    { $set: cleanedPayload },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+  return DashboardItem.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
 };
 
 // --------------------
 // DELETE
 // --------------------
+
 export const deleteDashboardItemService = async (
   id: string,
 ): Promise<IDashboardItem | null> => {

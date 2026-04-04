@@ -178,7 +178,7 @@ router.get(
   errorCodeController.errorCodeList,
 );
 
-router.post("/cart/add", addToCartController);
+router.post("/cart/add",authenticate, addToCartController);
 router.get("/cartItem", getCartController);
 router.patch("/item/:cartItemId", updateCartItemController);
 router.delete("/item/:cartItemId", removeCartItemController);

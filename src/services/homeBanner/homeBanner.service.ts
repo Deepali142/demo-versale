@@ -1,8 +1,5 @@
-import {
-  HomeBanner,
-  IHomeBanner,
-} from "../../models/homeBanner/homeBanner.model";
-import mongoose, { SortOrder, FilterQuery } from "mongoose";
+import mongoose, { FilterQuery, SortOrder } from "mongoose";
+import { HomeBanner, IHomeBanner } from "../../models/homeBanner/homeBanner.model";
 
 /* ================= CONSTANTS ================= */
 
@@ -19,22 +16,30 @@ export const VALID_APP_TYPES = ["USER", "TECHNICIAN"] as const;
 
 export const VALID_MEDIA_TYPES = ["IMAGE", "VIDEO"] as const;
 
+export const VALID_LAYOUT_TYPES = ["SMALL", "BANNER"] as const;
+
+/* ================= TYPES ================= */
+
 export type Destination = (typeof VALID_DESTINATIONS)[number];
 export type AppType = (typeof VALID_APP_TYPES)[number];
 export type MediaType = (typeof VALID_MEDIA_TYPES)[number];
+export type LayoutType = (typeof VALID_LAYOUT_TYPES)[number];
 
-/* ================= TYPES ================= */
+/* ================= PAYLOAD TYPES ================= */
 
 interface SaveHomeBannerPayload {
   appType: AppType;
   mediaType: MediaType;
   mediaUrl: string;
   thumbnailUrl?: string;
+
   destination: Destination;
-  position: number;
-  section?: "TOP" | "MIDDLE" | "BOTTOM";
+  section: "TOP" | "MIDDLE" | "BOTTOM";
+
+  layoutType: LayoutType; 
+
+  order: number; 
   data?: string;
-  order: number;
 }
 
 interface EditHomeBannerPayload {
@@ -42,42 +47,55 @@ interface EditHomeBannerPayload {
   mediaType?: MediaType;
   mediaUrl?: string;
   thumbnailUrl?: string;
+
   destination?: Destination;
-  position?: number;
-  data?: string;
-  order?: number | undefined;
   section?: "TOP" | "MIDDLE" | "BOTTOM";
+
+  layoutType?: LayoutType;
+  order?: number;
+  data?: string;
+
   isActive?: boolean;
 }
+
+/* ================= QUERY PARAMS ================= */
 
 export interface GetHomeBannerParams {
   appType?: AppType;
   destination?: Destination;
-  sortField?: "position" | "createdAt" | "updatedAt";
-  sortOrder?: SortOrder;
+  section?: "TOP" | "MIDDLE" | "BOTTOM";
+
+  sortOrder?: SortOrder; // default = 1
 }
+
+/* ================= RESPONSE TYPE ================= */
 
 export type HomeBannerPlain = {
   _id: mongoose.Types.ObjectId;
+
   appType: AppType;
   mediaType: MediaType;
   mediaUrl: string;
   thumbnailUrl?: string;
+
   destination: Destination;
-  position: number;
-  data?: string;
+  section: "TOP" | "MIDDLE" | "BOTTOM";
+
+  layoutType: LayoutType; 
+  order: number;
+  data?: Record<string, any>; 
+
   isActive: boolean;
-  section?: "TOP" | "MIDDLE" | "BOTTOM";
+
   createdAt?: Date;
-  order?: number;
   updatedAt?: Date;
 };
 
-/* Lean type (IMPORTANT) */
-type HomeBannerLean = Omit<IHomeBanner, keyof Document>;
-
 /* ================= SERVICES ================= */
 
+/**
+ * Create Banner
+ */
 export const saveHomeBannerService = async (
   payload: SaveHomeBannerPayload,
 ): Promise<IHomeBanner> => {
@@ -86,6 +104,9 @@ export const saveHomeBannerService = async (
   return banner;
 };
 
+/**
+ * Edit Banner
+ */
 export const editHomeBannerService = async (
   homeBannerId: string,
   payload: EditHomeBannerPayload,
@@ -104,50 +125,31 @@ export const editHomeBannerService = async (
   );
 };
 
+/**
+ * Get Banner List
+ */
 export const getHomeBannerListService = async ({
   appType,
   destination,
   section,
-  sortField = "position",
   sortOrder = 1,
-}: GetHomeBannerParams & {
-  section?: "TOP" | "MIDDLE" | "BOTTOM";
-}): Promise<HomeBannerPlain[]> => {
-  const allowedSortFields = [
-    "position",
-    "order",
-    "createdAt",
-    "updatedAt",
-  ] as const;
-
-  type SortField = (typeof allowedSortFields)[number];
-
-  const finalSortField: SortField = allowedSortFields.includes(
-    sortField as SortField,
-  )
-    ? (sortField as SortField)
-    : "position";
-
-  const sortObj: Record<string, SortOrder> =
-    finalSortField === "position"
-      ? { position: 1, order: 1 } // secondary sort
-      : { [finalSortField]: sortOrder };
-
+}: GetHomeBannerParams): Promise<HomeBannerPlain[]> => {
   const filter: FilterQuery<IHomeBanner> = {
     isActive: true,
   };
 
   if (appType) filter.appType = appType;
-  if (destination) filter.destination = destination; 
+  if (destination) filter.destination = destination;
   if (section) filter.section = section;
 
   const banners = await HomeBanner.find(filter)
-    .sort(sortObj)
-    .lean()
+    .sort({ order: sortOrder })
+    .lean<HomeBannerPlain[]>() 
     .exec();
 
-  return banners as unknown as HomeBannerPlain[];
+  return banners;
 };
+
 export const deleteHomeBannerService = async (
   bannerId: string,
 ): Promise<boolean> => {
