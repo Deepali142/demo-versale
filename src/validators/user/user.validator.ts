@@ -11,10 +11,10 @@ export const updateUserSchema = Joi.object({
 export const addEditAddressSchema = Joi.object({
   addressId: Joi.string().allow("").optional(),
 
-  userId: Joi.string().required().messages({
-    "any.required": "User ID is required",
-    "string.base": "User ID must be a string",
-  }),
+  // userId: Joi.string().required().messages({
+  //   "any.required": "User ID is required",
+  //   "string.base": "User ID must be a string",
+  // }),
 
   houseNumber: Joi.string().required().messages({
     "any.required": "House number is required",

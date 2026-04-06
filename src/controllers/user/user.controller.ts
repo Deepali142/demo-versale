@@ -167,8 +167,8 @@ export const userAddresses = async (req: Request, res: Response) => {
 
 export const userActiveAddresses = async (req: Request, res: Response) => {
   try {
-    // const { userId } = req.params;
-    const userId = (req as unknown as { userId: string }).userId;
+    let userId = req.user?.id?.toString(); 
+    // const userId = (req as unknown as { userId: string }).userId;
 
     if (!userId || typeof userId !== "string") {
       return res.status(400).json({
@@ -295,8 +295,11 @@ export const userList = async (req: Request, res: Response) => {
 };
 
 export const addEditAddress = async (req: Request, res: Response) => {
-  const userId = (req as unknown as { userId: string }).userId;
+  // const userId = (req as unknown as { userId: string }).userId;
+
   const { addressId } = req.body;
+  let userId = req.user?.id?.toString(); 
+
 
   const {
     // addressId,

@@ -59,10 +59,10 @@ router.put(
 router.delete("/user/delete/:id", userController.deleteUser);
 
 // User Addresses
-router.get("/user/addresses/:userId", userController.userActiveAddresses);
+router.get("/user/addresses",authenticate, userController.userActiveAddresses);
 
 router.post(
-  "/user/address/add-edit/:addressId",
+  "/user/address/add-edit",
   authenticate,
   validateRequest(addEditAddressSchema),
   userController.addEditAddress,
@@ -178,12 +178,15 @@ router.get(
   errorCodeController.errorCodeList,
 );
 
-router.post("/cart/add",authenticate, addToCartController);
-router.get("/cartItem", getCartController);
-router.patch("/item/:cartItemId", updateCartItemController);
-router.delete("/item/:cartItemId", removeCartItemController);
+router.post("/cart/add",function(req, res, next) {
+  console.log("Add to Cart Request Body:", req.body);
+  next();
+}, authenticate, addToCartController);
+router.get("/cartItem",authenticate, getCartController);
+router.patch("/item/:cartItemId", authenticate, updateCartItemController);
+router.delete("/item/:cartItemId", authenticate, removeCartItemController);
 
-router.get("/my-cart",  validateRequest(authSchema), getMyCartController);
+router.get("/my-cart",  authenticate, getMyCartController);
 
 
 export default router;

@@ -1,45 +1,99 @@
-// src/types/cart.types.ts
 import { Types } from "mongoose";
 
-/** Attributes for a single cart item */
+/**
+ * 🔥 MAIN TYPE
+ */
+export type CartMainType = "BOOKING" | "QUOTE_REQUEST";
+
+/**
+ * 🔥 SUB TYPE (BUSINESS LOGIC)
+ */
+export type CartSubType =
+  | "INSTALLATION"
+  | "REPAIR"
+  | "SERVICE"
+  | "COMPRESSOR"
+  | "GAS_CHARGING"
+  | "COPPER_PIPING"
+  | "AMC"
+  | "OLD_AC"
+  | "OTHER"
+  | "PURCHASE_LEAD"
+  | "FREE_CONSULTATION";
+
+/**
+ * ATTRIBUTES (FIXED)
+ */
 export interface ICartItemAttributes {
-  type: string;         // Required
-  subType?: string;     // Optional
-  variant?: string;     // Optional
+  categoryType: string; // AC / Boiler / Heat Pump
+  subType?: string;
+  variant?: string;
 }
 
-/** Single item in a cart category */
+/**
+ * FLEXIBLE META
+ */
+export interface ICartItemMeta {
+  brand?: string;
+  model?: string;
+  age?: string;
+  condition?: string;
+  issue?: string;
+  planType?: string;
+  notes?: string;
+}
+
+/**
+ * CART ITEM
+ */
 export interface ICartItem {
-  serviceId: Types.ObjectId;
+  type: CartMainType;     // BOOKING | QUOTE_REQUEST
+  subType?: CartSubType;
+
+  serviceId?: Types.ObjectId; // <-- make optional
   name: string;
-  serviceType: "Sterilization" | "Repair" | "Installation";
+
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+
   attributes: ICartItemAttributes;
+  meta?: ICartItemMeta;
 }
 
-/** Group of items under a category */
+/**
+ * CATEGORY GROUP (only for BOOKING items)
+ */
 export interface ICartService {
   category: "AC" | "Boiler" | "Heat Pump";
   items: ICartItem[];
 }
 
-/** Main cart interface */
+/**
+ * MAIN CART
+ */
 export interface ICart {
   userId: Types.ObjectId;
-  services: ICartService[];
+
+  services: ICartService[];        // BOOKING items
+  quoteRequests: ICartItem[];      // QUOTE_REQUEST items (separate array)
+
   itemTotal: number;
   discount: number;
+
   tax: {
     vatRate: number;
     vatAmount: number;
   };
+
   grandTotal: number;
-  addressId?: Types.ObjectId;                        // Optional
-  slot?: "FIRST_HALF" | "SECOND_HALF" | "FULL_DAY"; // Optional
-  date?: Date;                                      // Optional
+
+  addressId?: Types.ObjectId;
+  slot?: "FIRST_HALF" | "SECOND_HALF" | "FULL_DAY";
+  date?: Date;
+
   isActive: boolean;
-  createdAt?: Date;                                 // Optional for timestamps
-  updatedAt?: Date;                                 // Optional for timestamps
+
+  createdAt?: Date;
+  updatedAt?: Date;
 }
