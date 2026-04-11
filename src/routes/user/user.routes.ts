@@ -26,6 +26,7 @@ import { applyCouponSchema } from "../../validators/coupon/coupon.validator";
 import { bannerValidatorSchema } from "../../validators/homeBanner/homeBanner.validator";
 import { errorCodeListSchema } from "../../validators/brand/errorCode.validator";
 import { addToCartController, getCartController, getMyCartController, removeCartItemController, updateCartItemController } from "../../controllers/cart/cart.controller";
+import { productListController } from "../../controllers/shop/product.controller";
 
 const router = Router();
 
@@ -187,6 +188,8 @@ router.patch("/item/:cartItemId", authenticate, updateCartItemController);
 router.delete("/item/:cartItemId", authenticate, removeCartItemController);
 
 router.get("/my-cart",  authenticate, getMyCartController);
+
+
 
 
 export default router;

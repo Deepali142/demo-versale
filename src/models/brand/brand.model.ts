@@ -1,58 +1,54 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model } from "mongoose";
+import { IBrand, IErrorCode, ErrorCategory } from "../../types/brand.types";
 
 // ---------------------
-// INTERFACES
+// SUB-SCHEMA
 // ---------------------
 
-export interface IErrorCode {
-  code: string;
-  acType: string;
-  models: string;
-  solution: string[];
-  category: "INVERTOR" | "NON_INVERTOR";
-  description: string;
-}
+const errorCodeSchema = new Schema<IErrorCode>(
+  {
+    code: { type: String, trim: true, required: true },
 
-export interface IBrand extends Document {
-  name: string;
-  isActive: number;
-  globalErrorCodes: IErrorCode[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+    acType: { type: String, trim: true },
 
-// ---------------------
-// SUB-SCHEMA (Error Codes)
-// ---------------------
+    models: { type: String, trim: true },
 
-const errorCodeSchema = new Schema<IErrorCode>({
-  code: { type: String, trim: true, default: "" },
-  acType: { type: String, trim: true, default: "" },
-  models: { type: String, trim: true, default: "" },
-  solution: [{ type: String, trim: true }],
-  category: {
-    type: String,
-    enum: ["INVERTOR", "NON_INVERTOR"],
-    default: "NON_INVERTOR",
+    solution: [{ type: String, trim: true }],
+
+    category: {
+      type: String,
+      enum: Object.values(ErrorCategory),
+      default: ErrorCategory.NON_INVERTER,
+    },
+
+    description: { type: String, trim: true },
   },
-  description: { type: String, trim: true, default: "" },
-});
-
-// ---------------------
-// MAIN BRAND SCHEMA
-// ---------------------
+  { _id: false } 
+);
 
 const brandSchema = new Schema<IBrand>(
   {
-    name: { type: String, trim: true, default: "" },
-    isActive: { type: Number, default: 1 },
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    logo: {
+      type: String, 
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     globalErrorCodes: [errorCodeSchema],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-// ---------------------
-// MODEL EXPORT
-// ---------------------
+brandSchema.index({ name: 1 });
+brandSchema.index({ isActive: 1 });
 
 export const Brand = model<IBrand>("Brand", brandSchema);

@@ -5,7 +5,14 @@ import {
   getUserBrandListService,
   toggleBrandStatusService,
 } from "../../services/brand/brand.service";
-import { AdminCreateEditBrandPayload } from "../../services/brand/brand.service";
+import { AdminCreateEditBrandPayload } from "../../types/brand.types";
+
+import {
+  ok,
+  badRequest,
+  serverError,
+  notFound,
+} from "../../middlewares/response/response";
 
 export const adminCreateEditBrand = async (req: Request, res: Response) => {
   try {
@@ -13,83 +20,62 @@ export const adminCreateEditBrand = async (req: Request, res: Response) => {
 
     const result = await adminCreateEditBrandService(payload);
 
-    return res.status(200).json({
-      success: true,
-      message: result.message,
-    });
+    return ok(res, result.message);
   } catch (error: unknown) {
-    const err = error instanceof Error ? error.message : "SERVER_ERROR";
-
-    let message = "Something went wrong";
+    const err = error instanceof Error ? error.message : "";
 
     switch (err) {
       case "BRAND_NAME_REQUIRED":
-        message = "Brand name must be provided";
-        break;
-      case "INVALID_BRAND_ID":
-        message = "Invalid brandId";
-        break;
-      case "BRAND_NAME_EXISTS":
-        message = "Brand name already exists";
-        break;
-      case "BRAND_ALREADY_EXISTS":
-        message = "Brand already exists";
-        break;
-    }
+        return badRequest(res, "Brand name must be provided");
 
-    return res.status(400).json({
-      success: false,
-      message,
-    });
+      case "INVALID_BRAND_ID":
+        return badRequest(res, "Invalid brand ID");
+
+      case "BRAND_NAME_EXISTS":
+      case "BRAND_ALREADY_EXISTS":
+        return badRequest(res, "Brand already exists");
+
+      default:
+        return serverError(res);
+    }
   }
 };
 
-export const adminBrandActiveInactive = async (req: Request, res: Response) => {
+export const adminBrandActiveInactive = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { brandId } = req.params;
 
     if (!brandId) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid brand ID",
-      });
+      return badRequest(res, "Brand ID is required");
     }
 
     const result = await toggleBrandStatusService(brandId);
 
-    return res.status(200).json({
-      success: true,
-      message: result.message,
-    });
+    return ok(res, result.message);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      if (
-        error.message === "INVALID_BRAND_ID" ||
-        error.message === "BRAND_NOT_FOUND"
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            error.message === "BRAND_NOT_FOUND"
-              ? "No data found"
-              : "Invalid brand ID",
-        });
-      }
+    const err = error instanceof Error ? error.message : "";
+
+    if (err === "INVALID_BRAND_ID") {
+      return badRequest(res, "Invalid brand ID");
     }
 
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong",
-    });
+    if (err === "BRAND_NOT_FOUND") {
+      return notFound(res, "No data found");
+    }
+
+    return serverError(res);
   }
 };
 
 export const adminBrandList = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string, 10) || 1;
-    const limit = parseInt(req.query.limit as string, 10) || 10;
-    const search = (req.query.search as string) || "";
-    const sortField = (req.query.sortby as string) || "createdAt";
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = String(req.query.search || "");
+    const sortField = String(req.query.sortby || "createdAt");
     const sortOrder = req.query.orderby === "asc" ? 1 : -1;
 
     const { list, totalCount } = await getBrandListService({
@@ -100,43 +86,26 @@ export const adminBrandList = async (req: Request, res: Response) => {
       sortOrder,
     });
 
-    return res.status(200).json({
-      success: true,
-      data: list,
-      count: totalCount,
-    });
+    return ok(res, "Success", list, totalCount);
   } catch {
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong",
-    });
+    return serverError(res);
   }
 };
 
 export const userBrandList = async (req: Request, res: Response) => {
-  const value = req.query;
-
-  const page = parseInt((value.page as string) || "1", 10) || 1;
-  const limit = parseInt((value.limit as string) || "999", 10) || 999;
-  const search = (value.search as string) || "";
-
   try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = String(req.query.search || "");
+
     const result = await getUserBrandListService({
       page,
       limit,
       search,
     });
 
-    return res.status(200).json({
-      success: true,
-      data: result.data,
-      count: result.total,
-    });
-  } catch (err: unknown) {
-    return res.status(500).json({
-      success: false,
-      message: "Server Error",
-      error: err instanceof Error ? err.message : "Unknown error",
-    });
+    return ok(res, "Success", result.data, result.total);
+  } catch {
+    return serverError(res);
   }
 };

@@ -8,7 +8,7 @@ import { AppType, Screen } from "../../types/config.types";
 import { HomeBannerPlain } from "../../types/homeBanner.types";
 import { HomeScreenConfig } from "../../models/homeBanner/screenConfig.model";
 import { SECTION, SectionType } from "../../types/section.types";
-
+import { getFeaturedProductsService } from "../shop/product.service";
 
 // --------------------
 // TYPES
@@ -28,6 +28,12 @@ export type SectionKey =
   | "STERILIZATION_INFO"
   | "BOTTOM_BANNER";
 
+type DashboardItemResponse = ReturnType<typeof formatDashboardItems>[number];
+
+type ServiceTypeItemResponse = DashboardItemResponse & {
+  children: ServiceTypeItemResponse[];
+};
+
 export type HomeSectionResponse =
   | {
       type: "BANNER";
@@ -39,18 +45,25 @@ export type HomeSectionResponse =
       type: "DASHBOARD";
       section: string;
       title: string;
-      items: ReturnType<typeof formatDashboardItems>;
+      items: DashboardItemResponse[];
     }
-  |  {
-      type: "UTILITIES"; 
+  | {
+      type: "UTILITIES";
       section: "UTILITIES";
       title: string;
-      items: ReturnType<typeof formatDashboardItems>;
-     }
-  |  {
+      items: DashboardItemResponse[];
+    }
+  | {
+      type: "SERVICE_TYPE";
+      section: "SERVICE_TYPES";
+      title: string;
+      items: ServiceTypeItemResponse[];
+    }
+  | {
       type: "PRODUCT_LIST";
       section: string;
       items: unknown[];
+      title: string;
       isVisible?: boolean;
     }
   | {
@@ -59,9 +72,6 @@ export type HomeSectionResponse =
       items: { title: string; description: string }[];
     };
 
-// --------------------
-// HELPERS (MOVE ABOVE FOR TS)
-// --------------------
 
 const formatDashboardItems = (items: any[]) => {
   return items
@@ -85,17 +95,10 @@ const formatDashboardItems = (items: any[]) => {
     }));
 };
 
-// --------------------
-// SERVICE
-// --------------------
-
 export const getHomeScreenService = async (
   appType: AppType,
   screen?: Screen,
 ): Promise<HomeSectionResponse[]> => {
-  console.log(
-    `Fetching home screen data for appType: ${appType}, screen: ${screen}`,
-  );
 
   const [banners, dashboard, config] = await Promise.all([
     getHomeBannerListService({
@@ -123,21 +126,17 @@ export const getHomeScreenService = async (
     ? dashboard
     : [];
 
-  // ✅ Banner grouping
   const bannerMap: Record<"TOP" | "MIDDLE" | "BOTTOM", HomeBannerPlain[]> = {
     TOP: bannerList.filter((b) => b.section === "TOP"),
     MIDDLE: bannerList.filter((b) => b.section === "MIDDLE"),
     BOTTOM: bannerList.filter((b) => b.section === "BOTTOM"),
   };
 
-  // ✅ Dashboard map (fix from your old logic)
-  const dashboardMap = new Map(
-    dashboardList.map((d) => [d.section, d]),
-  );
+  const dashboardMap = new Map(dashboardList.map((d) => [d.section, d]));
 
   const sortedSections = config.sections
     .filter((s: any) => s.isActive)
-    .sort((a: any, b: any) => a.order - b.order);
+    .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
 
   const response: HomeSectionResponse[] = [];
 
@@ -161,7 +160,7 @@ export const getHomeScreenService = async (
       type: "BANNER",
       section: sectionKey,
       bannerDisplay: bannerDisplay ?? "AUTO",
-      items, // ✅ FIXED (was data)
+      items,
     });
   };
 
@@ -173,6 +172,7 @@ export const getHomeScreenService = async (
         name: item.name,
         iconUrl: item.iconUrl,
         position: item.position,
+        parentId: item.parentId?.toString() || null, // ✅ important
         action: {
           type: item.actionType,
           id: item.service?._id ?? item.actionValue ?? null,
@@ -186,6 +186,53 @@ export const getHomeScreenService = async (
           : null,
       }));
 
+  const buildServiceTypeTree = (items: any[]) => {
+    if (!items?.length) return [];
+
+    if (items[0]?.children) {
+      const sortTree = (nodes: any[]) => {
+        nodes.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        nodes.forEach((n) => {
+          if (n.children?.length) sortTree(n.children);
+        });
+      };
+
+      sortTree(items);
+      return items;
+    }
+
+    const map = new Map<string, any>();
+
+    const formatted = formatDashboardItems(items).map((item) => ({
+      ...item,
+      children: [],
+    }));
+
+    formatted.forEach((item) => {
+      map.set(item._id.toString(), item);
+    });
+
+    const root: any[] = [];
+
+    formatted.forEach((item) => {
+      if (item.parentId && map.has(item.parentId.toString())) {
+        map.get(item.parentId.toString()).children.push(item);
+      } else {
+        root.push(item);
+      }
+    });
+
+    const sortTree = (nodes: any[]) => {
+      nodes.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      nodes.forEach((n) => {
+        if (n.children?.length) sortTree(n.children);
+      });
+    };
+
+    sortTree(root);
+
+    return root;
+  };
   // --------------------
   // MAIN LOOP
   // --------------------
@@ -199,24 +246,33 @@ export const getHomeScreenService = async (
         break;
 
       case "SERVICE_TYPES": {
+        const sectionKey =
+          screen === "STERILIZATION" ? "SERVICE_TYPES" : "BOOKING";
 
-        const booking = dashboardMap.get("BOOKING"); // or SECTION.BOOKING if defined
+        const services = dashboardMap.get(sectionKey);
 
-        console.log("🚀 Booking Section:", booking);
-
-        if (booking?.items?.length) {
-          response.push({
-            type: "DASHBOARD",
-            section: "SERVICE_TYPES",
-            title: booking.title || "Services",
-            items: formatDashboardItems(booking.items), 
-          });
+        if (services?.items?.length) {
+          if (screen === "STERILIZATION") {
+            response.push({
+              type: "SERVICE_TYPE",
+              section: "SERVICE_TYPES",
+              title: services.title || "Select Service Type",
+              items: buildServiceTypeTree(services.items),
+            });
+          } else {
+            response.push({
+              type: "DASHBOARD",
+              section: "BOOKING",
+              title: services.title || "Services",
+              items: formatDashboardItems(services.items),
+            });
+          }
         }
         break;
       }
 
       case "REQUEST": {
-        const request = dashboardMap.get(SECTION.REQUEST);
+        const request = dashboardMap.get("REQUEST");
 
         if (request?.items?.length) {
           response.push({
@@ -229,8 +285,31 @@ export const getHomeScreenService = async (
         break;
       }
 
-      case "UTILITIES": {
-        const utilities = dashboardMap.get(SECTION.UTILITIES);
+      case "PRODUCT_LIST":
+        if (screen === "HOME") {
+          const featuredData = await getFeaturedProductsService({
+            page: "1",
+            limit: "5",
+          });
+
+          if (featuredData?.products?.length) {
+            response.push({
+              type: "PRODUCT_LIST",
+              section: "PRODUCTS",
+              items: featuredData.products,
+              title:"Feature Product",
+              isVisible: true,
+            });
+          }
+        }
+        break;
+
+      case "MIDDLE_BANNER":
+        handleBanner("MIDDLE", bannerDisplay);
+        break;
+
+       case "UTILITIES": {
+        const utilities = dashboardMap.get("UTILITIES");
 
         if (utilities?.items?.length) {
           response.push({
@@ -243,35 +322,21 @@ export const getHomeScreenService = async (
         break;
       }
 
-      case "MIDDLE_BANNER":
-        handleBanner("MIDDLE", bannerDisplay);
-        break;
+      case "STERILIZATION_INFO": {
+        const info = dashboardMap.get("STERILIZATION_INFO");
 
-      case "PRODUCT_LIST":
-        response.push({
-          type: "PRODUCT_LIST",
-          section: "PRODUCTS",
-          items: [], // ✅ FIXED (was data)
-          isVisible: false,
-        });
+        if (info?.items?.length) {
+          response.push({
+            type: "INFO",
+            section: "STERILIZATION",
+            items: info.items.map((i: any) => ({
+              title: i.title,
+              description: i.description,
+            })),
+          });
+        }
         break;
-
-      case "STERILIZATION_INFO":
-        response.push({
-          type: "INFO",
-          section: "STERILIZATION",
-          items: [
-            {
-              title: "Deep Cleaning",
-              description: "Kills bacteria, fungus & odor",
-            },
-            {
-              title: "Chemical Treatment",
-              description: "Removes 99.9% germs",
-            },
-          ],
-        });
-        break;
+      }
 
       case "BOTTOM_BANNER":
         handleBanner("BOTTOM", bannerDisplay);
@@ -284,10 +349,6 @@ export const getHomeScreenService = async (
 
   return response;
 };
-
-// --------------------
-// CONFIG SERVICES
-// --------------------
 
 export const createHomeConfigService = async (payload: {
   appType: AppType;

@@ -2,6 +2,19 @@
 import { Types } from "mongoose";
 import { Cart } from "../../models/cart/cart.models";
 import { CartSubType, ICartItem } from "../../types/cart.types";
+import { createEnquiryService } from "../enquiry/enquiry.service";
+import { ICreateEnquiryPayload, IUserContext } from "../../types/enquiry.types";
+const normalizeServiceType = (
+  type?: string
+): "Sterilization" | "Repair" | "Installation" => {
+  const validTypes = ["Sterilization", "Repair", "Installation"];
+
+  if (type && validTypes.includes(type)) {
+    return type as "Sterilization" | "Repair" | "Installation";
+  }
+
+  return "Repair"; // default fallback
+};
 
 /**
  * 🔥 ADD TO CART PAYLOAD
@@ -288,4 +301,48 @@ export const getCartService = async (userId: string) => {
   }
 
   return cart;
+};
+
+export const convertCartToEnquiryService = async (
+  user: IUserContext,
+  checkoutData: {
+    addressId: string;
+    slot: "FIRST_HALF" | "SECOND_HALF" | "FULL_DAY";
+    date: string;
+  }
+) => {
+  const cart = await Cart.findOne({ userId: user._id, isActive: true });
+
+  if (!cart) throw new Error("CART_NOT_FOUND");
+
+  const serviceDetails = [];
+
+  for (const category of cart.services) {
+    for (const item of category.items) {
+      if (!item.serviceId) continue;
+
+      serviceDetails.push({
+        service_id: item.serviceId,
+        quantity: item.quantity,
+  serviceType: normalizeServiceType(item.subType),
+        attributes: item.attributes,
+      });
+    }
+  }
+
+  const enquiryPayload: ICreateEnquiryPayload = {
+    addressId: checkoutData.addressId,
+    slot: checkoutData.slot,
+    date: checkoutData.date,
+    subType: "BOOKING",
+    serviceDetails,
+  };
+
+  const result = await createEnquiryService(enquiryPayload, user);
+
+  cart.services = [];
+  cart.quoteRequests = [];
+  await cart.save();
+
+  return result;
 };

@@ -17,9 +17,6 @@ const data: Record<SectionType, any> = {
   PRODUCT_LIST: [],
   STERILIZATION_INFO: [],
 };
-// --------------------
-// TYPES
-// --------------------
 
 export type AppType = "USER" | "TECHNICIAN";
 
@@ -44,17 +41,12 @@ export interface DashboardItemResponse {
   screen?: string;
 }
 
-// ✅ Section Response
 export interface DashboardSectionResponse {
   section: SectionType;
   title: string;
   items: DashboardItemResponse[];
   order?: number;
 }
-
-// --------------------
-// GET DASHBOARD (GROUPED)
-// --------------------
 
 export const getDashboardItemsService = async ({
   appType,
@@ -64,14 +56,12 @@ export const getDashboardItemsService = async ({
     isActive: true,
   };
 
-  // ✅ Safe filters
   if (appType) matchStage.appType = appType;
   if (screen) matchStage.screen = screen;
 
-  const aggregation = await DashboardItem.aggregate<DashboardSectionResponse>([
+  const aggregation = await DashboardItem.aggregate([
     { $match: matchStage },
 
-    // 🔥 JOIN SERVICE
     {
       $lookup: {
         from: "services",
@@ -87,91 +77,112 @@ export const getDashboardItemsService = async ({
       },
     },
 
-    // 🔥 CLEAN SERVICE OBJECT
     {
       $addFields: {
+        parentId: { $ifNull: ["$parentId", null] },
         service: {
-          _id: "$service._id",
-          name: "$service.name",
-          unitPrice: "$service.unitPrice",
-          category: "$service.category",
+          $cond: [
+            { $ifNull: ["$service._id", false] },
+            {
+              _id: "$service._id",
+              name: "$service.name",
+              unitPrice: "$service.unitPrice",
+            },
+            null,
+          ],
         },
       },
     },
 
-    // 🔥 REMOVE UNUSED FIELDS
-    {
-      $project: {
-        __v: 0,
-        createdAt: 0,
-        updatedAt: 0,
-      },
-    },
-
-    // 🔥 SORT ITEMS INSIDE SECTION
     { $sort: { position: 1 } },
 
-    // 🔥 GROUP BY SECTION
     {
       $group: {
         _id: "$section",
-        title: {
-          $first: {
-            $ifNull: ["$sectionTitle", "$section"],
-          },
+        sectionTitle: {
+          $first: { $ifNull: ["$sectionTitle", "$section"] },
         },
-        items: {
-          $push: {
-            _id: "$_id",
-            name: "$name",
-            iconUrl: "$iconUrl",
-            position: "$position",
-            actionType: "$actionType",
-            actionValue: "$actionValue",
-            service: "$service",
-            screen: "$screen",
-          },
-        },
+        items: { $push: "$$ROOT" },
       },
     },
 
-    // 🔥 SHAPE OUTPUT
     {
       $project: {
-        _id: 0,
         section: "$_id",
-        title: 1,
-        items: 1,
-      },
-    },
+        sectionTitle: 1,
 
-    // 🔥 ORDER SECTIONS
-    {
-      $addFields: {
-        order: {
-          $switch: {
-            branches: [
-              { case: { $eq: ["$section", "QUICK_SERVICES"] }, then: 1 },
-              { case: { $eq: ["$section", "BOOKING"] }, then: 2 },
-              { case: { $eq: ["$section", "REQUEST"] }, then: 3 },
-              { case: { $eq: ["$section", "UTILITIES"] }, then: 4 },
-              { case: { $eq: ["$section", "OTHER"] }, then: 5 },
-            ],
-            default: 99,
+        parents: {
+          $filter: {
+            input: "$items",
+            as: "item",
+            cond: { $eq: ["$$item.parentId", null] },
+          },
+        },
+
+        children: {
+          $filter: {
+            input: "$items",
+            as: "item",
+            cond: { $ne: ["$$item.parentId", null] },
           },
         },
       },
     },
 
-    { $sort: { order: 1 } },
+    {
+      $project: {
+        section: 1,
+        title: "$sectionTitle",
+
+        items: {
+          $map: {
+            input: "$parents",
+            as: "parent",
+            in: {
+              _id: "$$parent._id",
+              name: "$$parent.name",
+              iconUrl: "$$parent.iconUrl",
+              position: "$$parent.position",
+              actionType: "$$parent.actionType",
+              actionValue: "$$parent.actionValue",
+              service: "$$parent.service",
+
+              children: {
+                $map: {
+                  input: {
+                    $filter: {
+                      input: "$children",
+                      as: "child",
+                      cond: {
+                        $eq: [
+                          { $toString: "$$child.parentId" },
+                          { $toString: "$$parent._id" },
+                        ],
+                      },
+                    },
+                  },
+                  as: "child",
+                  in: {
+                    _id: "$$child._id",
+                    name: "$$child.name",
+                    iconUrl: "$$child.iconUrl",
+                    position: "$$child.position",
+                    actionType: "$$child.actionType",
+                    actionValue: "$$child.actionValue",
+                    service: "$$child.service",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   ]);
 
   return aggregation;
 };
 
-// --------------------
-// CREATE
-// --------------------
 
 export const createDashboardItemService = async (payload: {
   name: string;
@@ -233,7 +244,7 @@ export const updateDashboardItemService = async (
     actionType: "SERVICE" | "NAVIGATE" | "API";
     actionValue: string;
     isActive: boolean;
-  }>
+  }>,
 ): Promise<IDashboardItem | null> => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new Error("Invalid dashboard item ID");

@@ -8,7 +8,7 @@ import {
 } from "../../services/enquiry/enquiry.service";
 
 import { STATUS, HTTP_CODE, MESSAGE } from "../../constants/responseConstants";
-import { AuthPayload } from "../../middlewares/user/auth"; //  use your existing type
+import { AuthPayload } from "../../middlewares/user/auth"; 
 
 /**
  * CREATE ENQUIRY

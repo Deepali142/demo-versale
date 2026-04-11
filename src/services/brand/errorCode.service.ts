@@ -1,46 +1,22 @@
 import { Brand } from "../../models/brand/brand.model";
 import { Types } from "mongoose";
 import ExcelJS from "exceljs";
+import {
+  AdminErrorCodeListParams,
+  AdminErrorCodeListQuery,
+  IErrorCodeListRequest,
+  IUpdateOrCreateErrorCodeInput,
+  ParsedExcelRow,
+} from "../../types/error.types";
+const getString = (value: unknown) =>
+  typeof value === "string" ? value.trim() : "";
 
-interface IUpdateOrCreateErrorCodeInput {
-  brandId: string;
-  errorCodeId?: string;
-  code: string;
-  acType: string;
-  models: string;
-  solution: string[];
-  category: "INVERTOR" | "NON_INVERTOR";
-  description: string;
-}
-
-export interface IErrorCodeListRequest {
-  brandId: string;
-  errorCode: string;
-  acType: "INVERTOR" | "NON_INVERTOR";
-}
-export interface AdminErrorCodeListParams {
-  brandId: string;
-}
-
-export interface AdminErrorCodeListQuery {
-  page: unknown;
-  limit: unknown;
-  search: unknown;
-  category: unknown;
-  sortby: unknown;
-  orderby: unknown;
-}
-interface ParsedExcelRow {
-  brandname: string;
-  modelname: string;
-  actype: string;
-  ["error code"]: string;
-  description?: string;
-  solution?: string;
-  category?: string;
-}
-
-type ParsedExcel = Record<string, string | number | boolean | null | undefined>;
+/* =========================
+   CREATE / UPDATE
+========================= */
+const normalizeBuffer = (data: Buffer | Uint8Array): Buffer => {
+  return data instanceof Buffer ? data : Buffer.from(data);
+};
 
 export const createOrUpdateErrorCodeService = async (
   payload: IUpdateOrCreateErrorCodeInput,
@@ -56,7 +32,11 @@ export const createOrUpdateErrorCodeService = async (
     category,
   } = payload;
 
-  const errorCode = {
+  if (!Types.ObjectId.isValid(brandId)) {
+    return { success: false, message: "INVALID_BRAND_ID" };
+  }
+
+  const errorCodeData = {
     code: code || "",
     acType,
     models,
@@ -66,71 +46,62 @@ export const createOrUpdateErrorCodeService = async (
   };
 
   if (errorCodeId) {
-    // Update existing global error code
     const result = await Brand.updateOne(
-      {
-        _id: brandId,
-        "globalErrorCodes._id": errorCodeId,
-      },
+      { _id: brandId, "globalErrorCodes._id": errorCodeId },
       {
         $set: {
-          "globalErrorCodes.$.code": errorCode.code,
-          "globalErrorCodes.$.solution": errorCode.solution,
-          "globalErrorCodes.$.acType": errorCode.acType,
-          "globalErrorCodes.$.models": errorCode.models,
-          "globalErrorCodes.$.category": errorCode.category,
-          "globalErrorCodes.$.description": errorCode.description,
+          "globalErrorCodes.$": errorCodeData,
         },
       },
     );
 
-    if (result.modifiedCount === 0) {
-      return {
-        success: false,
-        message: "Error code not found to update",
-      };
+    if (!result.modifiedCount) {
+      return { success: false, message: "ERROR_CODE_NOT_FOUND" };
     }
 
-    return {
-      success: true,
-      message: "Error code updated successfully",
-    };
+    return { success: true, message: "Error code updated successfully" };
   }
 
-  // Create new global error code
   await Brand.updateOne(
     { _id: brandId },
-    { $push: { globalErrorCodes: errorCode } },
+    { $push: { globalErrorCodes: errorCodeData } },
   );
 
-  return {
-    success: true,
-    message: "Error code saved successfully",
-  };
+  return { success: true, message: "Error code saved successfully" };
 };
 
-export const errorCodeListService = async (
-  payload: IErrorCodeListRequest,
-): Promise<unknown> => {
+/* =========================
+   USER ERROR CODE SEARCH
+========================= */
+
+export const errorCodeListService = async (payload: IErrorCodeListRequest) => {
   const { brandId, errorCode, acType } = payload;
 
   const brand = await Brand.findOne(
     {
-      _id: new Types.ObjectId(brandId),
+      _id: brandId,
       "globalErrorCodes.code": errorCode,
       "globalErrorCodes.acType": acType,
     },
     {
-      globalErrorCodes: { $elemMatch: { code: errorCode } },
+      globalErrorCodes: { $elemMatch: { code: errorCode, acType } },
     },
-  );
+  ).lean();
 
   if (!brand) {
-    return null;
+    return { success: false, message: "NOT_FOUND", data: null };
   }
 
-  return brand.globalErrorCodes[0];
+  return {
+    success: true,
+    message: "Success",
+    data: brand.globalErrorCodes?.[0] || null,
+  };
 };
+
+/* =========================
+   ADMIN LIST
+========================= */
 
 export const adminErrorCodeListService = async (
   params: AdminErrorCodeListParams,
@@ -138,47 +109,52 @@ export const adminErrorCodeListService = async (
 ) => {
   const brandId = params.brandId;
 
-  const page = parseInt((query.page as string) || "1", 10);
-  const limit = parseInt((query.limit as string) || "10", 10);
-  const search = (query.search as string)?.trim() || "";
-  const category = (query.category as string)?.trim() || "";
-  const sortField = (query.sortby as string) || "createdAt";
-  const sortOrder = query.orderby && query.orderby === "desc" ? -1 : 1;
+  if (!Types.ObjectId.isValid(brandId)) {
+    return { success: false, message: "INVALID_BRAND_ID" };
+  }
 
-  const matchConditions: Record<string, unknown> = {
-    $and: [{ _id: new Types.ObjectId(brandId) }],
-  };
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const search = getString(query.search);
+  const category = getString(query.category);
+  const sortField: string = (query.sortby as string) || "createdAt";
+  const sortOrder = query.orderby === "desc" ? -1 : 1;
+
+  const pipeline: any[] = [
+    { $match: { _id: new Types.ObjectId(brandId) } },
+    { $unwind: "$globalErrorCodes" },
+  ];
 
   if (search) {
-    (matchConditions.$and as unknown[]).push({
-      $or: [
-        { name: { $regex: search, $options: "i" } },
-        { "globalErrorCodes.code": { $regex: search, $options: "i" } },
-        { "globalErrorCodes.models": { $regex: search, $options: "i" } },
-        { "globalErrorCodes.acType": { $regex: search, $options: "i" } },
-      ],
+    pipeline.push({
+      $match: {
+        $or: [
+          { "globalErrorCodes.code": { $regex: search, $options: "i" } },
+          { "globalErrorCodes.models": { $regex: search, $options: "i" } },
+          { "globalErrorCodes.acType": { $regex: search, $options: "i" } },
+        ],
+      },
     });
   }
 
   if (category) {
-    (matchConditions.$and as unknown[]).push({
-      "globalErrorCodes.category": category,
+    pipeline.push({
+      $match: { "globalErrorCodes.category": category },
     });
   }
 
-  const errorCodeList = await Brand.aggregate([
-    { $unwind: "$globalErrorCodes" },
-    { $match: matchConditions },
+  const list = await Brand.aggregate([
+    ...pipeline,
     {
       $project: {
         _id: "$globalErrorCodes._id",
         code: "$globalErrorCodes.code",
         acType: "$globalErrorCodes.acType",
         models: "$globalErrorCodes.models",
-        createdAt: "$globalErrorCodes.createdAt",
         solution: "$globalErrorCodes.solution",
         category: "$globalErrorCodes.category",
         description: "$globalErrorCodes.description",
+        createdAt: "$globalErrorCodes.createdAt",
       },
     },
     { $sort: { [sortField]: sortOrder } },
@@ -186,55 +162,57 @@ export const adminErrorCodeListService = async (
     { $limit: limit },
   ]);
 
-  const totalRecords = await Brand.aggregate([
-    { $match: { _id: new Types.ObjectId(brandId) } },
-    { $unwind: "$globalErrorCodes" },
-    { $match: matchConditions },
-    { $count: "count" },
-  ]);
+  const totalAgg = await Brand.aggregate([...pipeline, { $count: "count" }]);
 
   return {
-    list: errorCodeList,
-    total: totalRecords.length ? totalRecords[0].count : 0,
+    success: true,
+    message: "Success",
+    data: list,
+    total: totalAgg[0]?.count || 0,
   };
 };
 
-export const adminExcelErrorCodeUploadService = async (fileBuffer: Buffer) => {
+/* =========================
+   EXCEL UPLOAD
+========================= */
+
+export const adminExcelErrorCodeUploadService = async (
+  fileBuffer: Buffer | Uint8Array,
+) => {
   if (!fileBuffer) {
-    return {
-      status: false,
-      message: "No file provided",
-    };
+    return { success: false, message: "FILE_REQUIRED" };
   }
 
   const workbook = new ExcelJS.Workbook();
 
   try {
-    // Load buffer directly — no Uint8Array conversion!
-    // await workbook.xlsx.load(fileBuffer);
+    const normalizedBuffer = normalizeBuffer(fileBuffer);
+
+    await workbook.xlsx.load(normalizedBuffer as any);
   } catch {
-    return {
-      status: false,
-      message: "Invalid or corrupted Excel file",
-    };
+    return { success: false, message: "INVALID_FILE" };
   }
 
   const sheet = workbook.worksheets[0];
-
   if (!sheet) {
-    return {
-      status: false,
-      message: "No sheets found in the workbook",
-    };
+    return { success: false, message: "INVALID_SHEET" };
   }
 
-  // ---------- Extract Headers ----------
+  /* =========================
+     HEADER VALIDATION
+  ========================= */
+
   const headerRow = sheet.getRow(1);
-  const headers = (headerRow.values as (string | number | undefined)[])
+
+  if (!headerRow || !headerRow.values) {
+    return { success: false, message: "INVALID_HEADER" };
+  }
+
+  const headers = (headerRow.values as any[])
     .slice(1)
     .map((h) => h?.toString().trim().toLowerCase());
 
-  const expectedColumns = [
+  const expected = [
     "brandname",
     "modelname",
     "actype",
@@ -244,158 +222,109 @@ export const adminExcelErrorCodeUploadService = async (fileBuffer: Buffer) => {
     "category",
   ];
 
-  // Validate headers
-  const missingColumns = expectedColumns.filter(
-    (col) => !headers.includes(col.toLowerCase()),
-  );
+  const missing = expected.filter((col) => !headers.includes(col));
 
-  if (missingColumns.length > 0) {
+  if (missing.length) {
     return {
-      status: false,
-      message: "Invalid column names",
-      missingColumns,
+      success: false,
+      message: "INVALID_COLUMNS",
+      data: missing,
     };
   }
 
-  // ---------- Parse rows ----------
+  /* =========================
+     PARSE ROWS
+  ========================= */
+
   const rows: ParsedExcelRow[] = [];
 
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
 
-    const values = row.values as (string | number | null | undefined)[];
+    const values = row.values as any[];
+    if (!values || values.length === 0) return;
 
-    const rowData: ParsedExcel = {};
+    const obj: ParsedExcelRow = {
+      brandname: "",
+      modelname: "",
+      actype: "",
+      "error code": "",
+      description: "",
+      solution: "",
+      category: "",
+    };
 
-    values.slice(1).forEach((cellValue, index) => {
-      const key = headers[index];
+    values.slice(1).forEach((val, i) => {
+      const key = headers[i] as keyof ParsedExcelRow;
 
-      if (key) {
-        rowData[key] = cellValue?.toString().trim();
+      if (key && key in obj) {
+        obj[key] = val?.toString().trim() || "";
       }
     });
 
-    // rows.push(rowData as ParsedExcel);
-    rows.push({
-      brandname: rowData["brandname"]?.toString() ?? "",
-      modelname: rowData["modelname"]?.toString() ?? "",
-      actype: rowData["actype"]?.toString() ?? "",
-      ["error code"]: rowData["error code"]?.toString() ?? "",
-      description: rowData["description"]?.toString() ?? "",
-      solution: rowData["solution"]?.toString() ?? "",
-      category: rowData["category"]?.toString() ?? "",
-    });
-  });
+    const hasValue = Object.values(obj).some((v) => v !== "");
 
+    if (hasValue) {
+      rows.push(obj);
+    }
+  });
   if (!rows.length) {
-    return {
-      status: false,
-      message: "Uploaded file is empty",
-    };
+    return { success: false, message: "EMPTY_FILE" };
   }
 
-  // ---------- Process each row ----------
-  for (const row of rows) {
-    const {
-      brandname,
-      modelname,
-      actype,
-      ["error code"]: errorCode,
-      description,
-      solution,
-      category,
-    } = row;
+  /* =========================
+     PROCESS DATA
+  ========================= */
 
-    const errorCodeObj = {
-      code: errorCode || "",
-      models: modelname || "",
-      acType: actype || "",
-      solution: solution ? solution.split(",").map((i) => i.trim()) : [],
-      description: description || "",
-      category: category || "NON_INVERTOR",
-    };
+  try {
+    for (const r of rows) {
+      const {
+        brandname,
+        modelname,
+        actype,
+        ["error code"]: errorCode,
+        description,
+        solution,
+        category,
+      } = r;
 
-    const brand = await Brand.findOne({ name: brandname });
+      // ✅ Skip invalid rows
+      if (!brandname || !errorCode) continue;
 
-    if (!brand) {
-      await Brand.create({
-        name: brandname,
-        globalErrorCodes: [errorCodeObj],
-      });
-      continue;
-    }
+      const errorObj = {
+        code: errorCode,
+        models: modelname || "",
+        acType: actype || "",
+        solution: solution
+          ? solution
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [],
+        description: description || "",
+        category: category || "NON_INVERTOR",
+      };
 
-    // Check duplicate
-    const matched = await Brand.aggregate([
-      {
-        $match: {
-          name: brandname,
-          globalErrorCodes: {
-            $elemMatch: {
-              code: errorCode,
-              models: modelname,
-            },
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          matchedErrorCode: {
-            $filter: {
-              input: "$globalErrorCodes",
-              as: "err",
-              cond: {
-                $and: [
-                  { $eq: ["$$err.code", errorCode] },
-                  { $eq: ["$$err.models", modelname] },
-                ],
-              },
-            },
-          },
-        },
-      },
-    ]);
-
-    if (matched.length > 0) {
-      const existing = matched[0].matchedErrorCode[0];
-
-      await Brand.updateOne(
-        {
-          name: brandname,
-          globalErrorCodes: {
-            $elemMatch: {
-              code: errorCode,
-              models: modelname,
-            },
-          },
-        },
-        {
-          $set: {
-            "globalErrorCodes.$.code": errorCodeObj.code || existing.code,
-            "globalErrorCodes.$.models": errorCodeObj.models || existing.models,
-            "globalErrorCodes.$.acType": errorCodeObj.acType || existing.acType,
-            "globalErrorCodes.$.solution":
-              errorCodeObj.solution.length > 0
-                ? errorCodeObj.solution
-                : existing.solution,
-            "globalErrorCodes.$.description":
-              errorCodeObj.description || existing.description,
-            "globalErrorCodes.$.category":
-              errorCodeObj.category || existing.category,
-          },
-        },
-      );
-    } else {
       await Brand.updateOne(
         { name: brandname },
-        { $push: { globalErrorCodes: errorCodeObj } },
+        {
+          $setOnInsert: { name: brandname },
+          $push: { globalErrorCodes: errorObj },
+        },
+        { upsert: true },
       );
     }
+  } catch (err) {
+    return {
+      success: false,
+      message: "PROCESSING_FAILED",
+      error: err instanceof Error ? err.message : "UNKNOWN_ERROR",
+    };
   }
 
   return {
-    status: true,
+    success: true,
     message: "File processed successfully",
+    count: rows.length,
   };
 };

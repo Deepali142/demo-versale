@@ -25,7 +25,7 @@ export interface IOldAcDetails {
  interface IServiceInput {
   service_id: Types.ObjectId | string;
 
-  serviceType?: "Sterilization" | "Repair" | "Installation"; // ✅ MUST EXIST
+  serviceType?: "Sterilization" | "Repair" | "Installation"; 
 
   quantity?: number;
 
@@ -39,13 +39,13 @@ export interface ICreateEnquiryPayload {
   slot: string;
   date: string;
 
-  name: string;
+  name?: string;
   subType: EnquirySubType;
 
   oldAcDetails?: IOldAcDetails;
   copperPipingDetails?: ICopperPipingDetails;
 
-  serviceDetails: IServiceInput[]; //MUST BE THIS
+  serviceDetails: IServiceInput[];
   amount?: number;
   order_id?: string;
 }

@@ -36,7 +36,7 @@ export const getHomeScreen = async (
   res: Response,
 ): Promise<Response> => {
   try {
-    const { type, screen } = req.query;
+    let { type, screen } = req.query;
 
     if (!isValidAppType(type)) {
       return res.status(400).json({
@@ -45,11 +45,12 @@ export const getHomeScreen = async (
       });
     }
 
-    if (screen && !isValidScreen(screen)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid screen",
-      });
+    if (screen === "REPAIR") {
+      screen = "STERILIZATION";
+    }
+
+    if(screen === "INSTALLATION"){
+      screen = "STERILIZATION";
     }
 
     const data = await getHomeScreenService(

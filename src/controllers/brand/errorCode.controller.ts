@@ -5,6 +5,30 @@ import {
   createOrUpdateErrorCodeService,
   errorCodeListService,
 } from "../../services/brand/errorCode.service";
+
+import {
+  ok,
+  badRequest,
+  notFound,
+  serverError,
+} from "../../middlewares/response/response";
+
+/* =========================
+   COMMON RESPONSE TYPE
+========================= */
+
+export interface ServiceResponse<T = unknown> {
+  success: boolean;
+  message: string;
+  data?: T;
+  count?: number;
+  error?: string;
+}
+
+/* =========================
+   BODY TYPE
+========================= */
+
 interface ICreateEditErrorCodeBody {
   brandId: string;
   errorCodeId?: string;
@@ -16,147 +40,139 @@ interface ICreateEditErrorCodeBody {
   category: "INVERTOR" | "NON_INVERTOR";
 }
 
+/* =========================
+   CREATE / UPDATE
+========================= */
+
 export const adminCreateEditErrorCode = async (
-  req: Request<unknown, unknown, unknown>,
-  res: Response,
+  req: Request,
+  res: Response
 ) => {
   try {
-    const body = req.body as unknown;
+    const body = req.body as ICreateEditErrorCodeBody;
 
-    const {
-      brandId,
-      errorCodeId,
-      acType,
-      models,
-      code,
-      solution,
-      description,
-      category,
-    } = body as ICreateEditErrorCodeBody;
-
-    if (!brandId) {
-      return res
-        .status(400)
-        .json({ success: false, message: "brandId required" });
+    if (!body?.brandId) {
+      return badRequest(res, "brandId required");
     }
 
-    const response = await createOrUpdateErrorCodeService({
-      brandId,
-      ...(errorCodeId && { errorCodeId }),
-      acType,
-      models,
-      code,
-      solution,
-      description,
-      category,
+    // ✅ FIX: Tell TS what service returns
+    const response: ServiceResponse = await createOrUpdateErrorCodeService({
+      brandId: body.brandId,
+      ...(body.errorCodeId && { errorCodeId: body.errorCodeId }),
+      acType: body.acType,
+      models: body.models,
+      code: body.code,
+      solution: body.solution,
+      description: body.description,
+      category: body.category,
     });
 
-    return res.status(response.success ? 200 : 404).json(response);
+    if (!response.success) {
+      return badRequest(res, response.message);
+    }
+
+    return ok(res, response.message, response.data);
   } catch (err) {
-    console.error("Error:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
+    console.error(err);
+    return serverError(res);
   }
 };
+
+/* =========================
+   USER LIST
+========================= */
 
 export const errorCodeList = async (req: Request, res: Response) => {
   try {
     const data = await errorCodeListService(req.body);
 
     if (!data) {
-      return res.status(404).json({
-        status: false,
-        message: "Brand or error code not found",
-      });
+      return notFound(res, "Brand or error code not found");
     }
 
-    return res.status(200).json({
-      status: true,
-      data,
-    });
+    return ok(res, "Success", data);
   } catch (error) {
-    console.error("Error fetching error code:", error);
-    return res.status(500).json({
-      status: false,
-      message: "Internal server error",
-    });
+    console.error(error);
+    return serverError(res);
   }
 };
 
-export const adminErrorCodeList = async (req: Request, res: Response) => {
+/* =========================
+   ADMIN LIST
+========================= */
+
+export const adminErrorCodeList = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { brandId } = req.params;
 
     if (!brandId) {
-      return res.status(400).json({
-        status: false,
-        message: "Brand ID is required",
-      });
+      return badRequest(res, "Brand ID is required");
     }
 
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
     const query = {
-      page: parseInt((req.query.page as string) || "1", 10),
-      limit: parseInt((req.query.limit as string) || "10", 10),
-      search: (req.query.search as string) || "",
-      category: (req.query.category as string) || "",
+      page,
+      limit,
+      search: (req.query.search as string)?.trim() || "",
+      category: (req.query.category as string)?.trim() || "",
       sortby: (req.query.sortby as string) || "",
       orderby: (req.query.orderby as string) || "asc",
     };
+
     const result = await adminErrorCodeListService({ brandId }, query);
 
-    return res.status(200).json({
-      status: true,
-      data: result.list,
-      count: result.total,
-      pagination: {
-        page: parseInt((req.query.page as string) || "1", 10),
-        limit: parseInt((req.query.limit as string) || "10", 10),
-        totalRecords: result.total,
-        totalPages: Math.ceil(
-          result.total / parseInt((req.query.limit as string) || "10", 10),
-        ),
+    return ok(
+      res,
+      "Success",
+      {
+        data: result.data,
+        pagination: {
+          page,
+          limit,
+          totalRecords: result.total,
+          totalPages: Math.ceil(result.total / limit),
+        },
       },
-    });
+      result.total
+    );
   } catch (error) {
-    console.error("Error listing error codes:", error);
-
-    return res.status(500).json({
-      status: false,
-      message: "Failed to retrieve error code list",
-      error: (error as Error).message,
-    });
+    console.error(error);
+    return serverError(res, "Failed to retrieve error code list");
   }
 };
 
+/* =========================
+   EXCEL UPLOAD
+========================= */
+
 export const adminExcelErrorCodeUpload = async (
-  req: Request<unknown, unknown, unknown, unknown>,
-  res: Response,
+  req: Request,
+  res: Response
 ) => {
   try {
     const file = req.file;
 
-    if (!file) {
-      return res.status(400).json({
-        status: false,
-        message: "No file uploaded",
-      });
+    if (!file?.buffer) {
+      return badRequest(res, "No file uploaded");
     }
 
-    const result = await adminExcelErrorCodeUploadService(file.buffer);
+    // ✅ FIX: Type response
+    const result: ServiceResponse = await adminExcelErrorCodeUploadService(
+      file.buffer
+    );
 
-    if (!result.status) {
-      return res.status(400).json(result);
+    if (!result.success) {
+      return badRequest(res, result.message);
     }
 
-    return res.status(200).json(result);
-  } catch (error: unknown) {
-    const err = error as Error;
-
-    return res.status(500).json({
-      status: false,
-      message: "Internal server error",
-      error: err.message,
-    });
+    return ok(res, result.message, null, result.count);
+  } catch (error) {
+    console.error(error);
+    return serverError(res);
   }
 };
