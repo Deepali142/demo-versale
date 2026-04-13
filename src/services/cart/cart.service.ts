@@ -4,8 +4,9 @@ import { Cart } from "../../models/cart/cart.models";
 import { CartSubType, ICartItem } from "../../types/cart.types";
 import { createEnquiryService } from "../enquiry/enquiry.service";
 import { ICreateEnquiryPayload, IUserContext } from "../../types/enquiry.types";
+import User from "../../models/user/user.model";
 const normalizeServiceType = (
-  type?: string
+  type?: string,
 ): "Sterilization" | "Repair" | "Installation" => {
   const validTypes = ["Sterilization", "Repair", "Installation"];
 
@@ -95,6 +96,8 @@ export const addToCartService = async (
   let cart = await Cart.findOne({ userId, isActive: true });
   cart ??= new Cart({ userId: new Types.ObjectId(userId) });
 
+  let findUser = await User.findById(userId)
+
   const validSubTypes: CartSubType[] = [
     "INSTALLATION",
     "REPAIR",
@@ -126,7 +129,7 @@ export const addToCartService = async (
     ...(payload.type === "BOOKING" && payload.serviceId
       ? { serviceId: new Types.ObjectId(payload.serviceId) }
       : {}),
-    name: payload.name,
+    name: findUser && findUser.name ? findUser.name : "",
     quantity,
     unitPrice,
     totalPrice: quantity * unitPrice,
@@ -177,7 +180,7 @@ export const updateCartItemService = async (
   userId: string,
   cartItemId: string,
   payload: {
-    quantity?: number;
+    action?: "INCREMENT" | "DECREMENT";
     categoryType?: string;
     subType?: string;
     variant?: string;
@@ -187,18 +190,18 @@ export const updateCartItemService = async (
   const cart = await Cart.findOne({ userId, isActive: true });
   if (!cart) throw new Error("Cart not found");
 
-  let foundItem: ICartItem | null = null;
+  let foundItem: any = null;
+  let isFromService = false;
 
-  // 1️⃣ Search in services
   for (const service of cart.services) {
     const item = (service.items as any).id(cartItemId);
     if (item) {
       foundItem = item;
+      isFromService = true;
       break;
     }
   }
 
-  // 2️⃣ If not found, search in quoteRequests
   if (!foundItem) {
     const item = (cart.quoteRequests as any).id(cartItemId);
     if (item) {
@@ -208,14 +211,37 @@ export const updateCartItemService = async (
 
   if (!foundItem) throw new Error("Item not found");
 
-  // 3️⃣ Update quantity
-  if (payload.quantity !== undefined) {
-    if (payload.quantity <= 0) throw new Error("Quantity must be > 0");
-    foundItem.quantity = payload.quantity;
+  if (payload.action) {
+    if (payload.action === "INCREMENT") {
+      foundItem.quantity = (foundItem.quantity || 0) + 1;
+    }
+
+    if (payload.action === "DECREMENT") {
+      if (foundItem.quantity > 1) {
+        foundItem.quantity -= 1;
+      } else {
+        if (isFromService) {
+          cart.services = cart.services
+            .map((service: any) => {
+              service.items = service.items.filter(
+                (item: any) => item._id.toString() !== cartItemId,
+              );
+              return service.items.length ? service : null;
+            })
+            .filter(Boolean);
+        } else {
+          cart.quoteRequests = cart.quoteRequests.filter(
+            (item: any) => item._id.toString() !== cartItemId,
+          );
+        }
+
+        await cart.save();
+        return cart;
+      }
+    }
   }
 
-  // 4️⃣ Validate subType if provided
-  const validSubTypes: CartSubType[] = [
+  const validSubTypes = [
     "INSTALLATION",
     "REPAIR",
     "SERVICE",
@@ -229,14 +255,13 @@ export const updateCartItemService = async (
     "FREE_CONSULTATION",
   ];
 
-  let subType: CartSubType | undefined;
+  let subType;
   if (payload.subType) {
-    if (!validSubTypes.includes(payload.subType as CartSubType))
+    if (!validSubTypes.includes(payload.subType))
       throw new Error("Invalid subType");
-    subType = payload.subType as CartSubType;
+    subType = payload.subType;
   }
 
-  // 5️⃣ Update attributes
   if (payload.categoryType || subType || payload.variant) {
     foundItem.attributes = {
       ...foundItem.attributes,
@@ -246,15 +271,19 @@ export const updateCartItemService = async (
     };
   }
 
-  // 6️⃣ Update meta
   if (payload.meta) {
-    foundItem.meta = { ...foundItem.meta, ...payload.meta };
+    foundItem.meta = {
+      ...foundItem.meta,
+      ...payload.meta,
+    };
   }
 
-  // 7️⃣ Recalculate totalPrice
   foundItem.totalPrice = (foundItem.quantity ?? 0) * (foundItem.unitPrice ?? 0);
 
-  // 8️⃣ Save cart
+  cart.services = cart.services.filter(
+    (service: any) => service.items.length > 0,
+  );
+
   await cart.save();
   return cart;
 };
@@ -266,19 +295,31 @@ export const removeCartItemService = async (
   const cart = await Cart.findOne({ userId, isActive: true });
   if (!cart) throw new Error("Cart not found");
 
-  let removed = false;
+  let found = false;
 
-  cart.services = cart.services.filter((service: any) => {
-    const originalLength = service.items.length;
-    service.items = service.items.filter(
-      (item: any) => item._id.toString() !== cartItemId,
-    );
-    if (service.items.length < originalLength) removed = true;
+  cart.services = cart.services
+    .map((service: any) => {
+      service.items = service.items
+        .map((item: any) => {
+          if (item._id.toString() === cartItemId) {
+            found = true;
 
-    return service.items.length > 0;
-  });
+            if (item.quantity > 1) {
+              item.quantity -= 1;
+              return item;
+            }
 
-  if (!removed) throw new Error("Item not found");
+            return null;
+          }
+          return item;
+        })
+        .filter(Boolean);
+
+      return service.items.length > 0 ? service : null;
+    })
+    .filter(Boolean);
+
+  if (!found) throw new Error("Item not found");
 
   await cart.save();
   return cart;
@@ -309,7 +350,7 @@ export const convertCartToEnquiryService = async (
     addressId: string;
     slot: "FIRST_HALF" | "SECOND_HALF" | "FULL_DAY";
     date: string;
-  }
+  },
 ) => {
   const cart = await Cart.findOne({ userId: user._id, isActive: true });
 
@@ -324,7 +365,7 @@ export const convertCartToEnquiryService = async (
       serviceDetails.push({
         service_id: item.serviceId,
         quantity: item.quantity,
-  serviceType: normalizeServiceType(item.subType),
+        serviceType: normalizeServiceType(item.subType),
         attributes: item.attributes,
       });
     }

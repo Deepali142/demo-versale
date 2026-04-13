@@ -39,7 +39,7 @@ export const addToCartController = async (
     } = req.body;
 
     // Basic validation
-    if (!type || !name || !category || !attributes?.categoryType) {
+    if (!type || !category || !attributes?.categoryType) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields: type, name, category, attributes.categoryType",
