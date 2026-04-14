@@ -25,7 +25,7 @@ import { userBrandListQuerySchema } from "../../validators/brand/brand.validator
 import { applyCouponSchema } from "../../validators/coupon/coupon.validator";
 import { bannerValidatorSchema } from "../../validators/homeBanner/homeBanner.validator";
 import { errorCodeListSchema } from "../../validators/brand/errorCode.validator";
-import { addToCartController, getCartController, getMyCartController, removeCartItemController, updateCartItemController } from "../../controllers/cart/cart.controller";
+import { addToCartController, checkoutController, getCartController, getMyCartController, removeCartItemController, updateCartItemController } from "../../controllers/cart/cart.controller";
 import { productListController } from "../../controllers/shop/product.controller";
 
 const router = Router();
@@ -189,7 +189,6 @@ router.delete("/item/:cartItemId", authenticate, removeCartItemController);
 
 router.get("/my-cart",  authenticate, getMyCartController);
 
-
-
+router.post("/cart/checkout", authenticate, checkoutController);
 
 export default router;

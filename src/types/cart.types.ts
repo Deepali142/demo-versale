@@ -11,6 +11,7 @@ export type CartMainType = "BOOKING" | "QUOTE_REQUEST";
 export type CartSubType =
   | "INSTALLATION"
   | "REPAIR"
+  | "STERILIZATION"
   | "SERVICE"
   | "COMPRESSOR"
   | "GAS_CHARGING"
@@ -51,7 +52,7 @@ export interface ICartItem {
   subType?: CartSubType;
 
   serviceId?: Types.ObjectId; // <-- make optional
-  name: string;
+  name?: string;
 
   quantity: number;
   unitPrice: number;

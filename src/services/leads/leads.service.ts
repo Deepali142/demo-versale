@@ -2,9 +2,17 @@
 import moment from "moment";
 import Lead, { ILead } from "../../models/leads/leads.model";
 import { Types } from "mongoose";
-// import { Types } from "mongoose";
-
 const ALLOWED_PLACE = ["commercial", "residential"];
+
+interface ILeadResponse {
+  _id: string;
+  place: string;
+  quantity: number;
+  leadId: string;
+  comment: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // helper for DDMM format
 // const getFormattedDate = (): string => {
@@ -14,22 +22,26 @@ const ALLOWED_PLACE = ["commercial", "residential"];
 //   return `${dd}${mm}`;
 // };
 
+type PlaceType = (typeof ALLOWED_PLACE)[number];
+
 export const createLeadService = async (
-  place: string,
+  place: PlaceType,
   quantity: number,
   userId: string,
   comment?: string,
 ): Promise<ILead> => {
-  // Validation
   if (!place) {
     throw new Error("Place is required");
   }
+
   if (!userId) {
     throw new Error("User ID is required");
   }
-  if (!quantity) {
-    throw new Error("Quantity is required");
+
+  if (quantity <= 0) {
+    throw new Error("Quantity must be greater than 0");
   }
+
   if (!ALLOWED_PLACE.includes(place)) {
     throw new Error("Invalid place value. Allowed: commercial, residential");
   }
@@ -41,7 +53,7 @@ export const createLeadService = async (
   const createdLead = await Lead.create({
     place,
     quantity,
-    user_id: userId,
+    user_id: new Types.ObjectId(userId), // ✅ FIXED
     comment: comment || "",
     leadId,
   });
@@ -49,31 +61,28 @@ export const createLeadService = async (
   return createdLead;
 };
 
-export const getUserLeadDetailsService = async (leadId: string) => {
+export const getUserLeadDetailsService = async (
+  leadId: string,
+): Promise<ILeadResponse | null> => {
   if (!leadId || leadId.trim() === "") {
     throw new Error("Lead id is required");
   }
 
-  const result = await Lead.aggregate([
-    {
-      $match: { leadId: leadId }, // match custom string id
-    },
-    {
-      $project: {
-        _id: 1,
-        place: { $ifNull: ["$place", ""] },
-        quantity: { $ifNull: ["$quantity", ""] },
-        leadId: { $ifNull: ["$leadId", ""] },
-        comment: { $ifNull: ["$comment", ""] },
-        createdAt: 1,
-        updatedAt: 1,
-      },
-    },
-  ]);
+  const lead = await Lead.findOne({ leadId: leadId.trim() })
+    .select("_id place quantity leadId comment createdAt updatedAt")
+    .lean();
 
-  if (result.length === 0) return null;
+  if (!lead) return null;
 
-  return result[0];
+  return {
+    _id: (lead._id as Types.ObjectId).toHexString(),
+    place: lead.place || "",
+    quantity: lead.quantity ?? 0,
+    leadId: lead.leadId || "",
+    comment: lead.comment || "",
+    createdAt: lead.createdAt as Date,
+    updatedAt: lead.updatedAt as Date,
+  };
 };
 
 export const getUserLeadListService = async (
@@ -118,24 +127,31 @@ export const getUserLeadListService = async (
 };
 
 export const getAdminLeadListService = async (
-  page: number,
-  limit: number,
-  search: string,
-  sortField: string,
-  sortOrder: 1 | -1,
+  page: number = 1,
+  limit: number = 10,
+  search: string = "",
+  sortField: string = "createdAt",
+  sortOrder: 1 | -1 = -1,
 ) => {
   const offset = (page - 1) * limit;
 
-  const filter = {
-    $or: [
-      { place: { $regex: search, $options: "i" } },
-      { "userDetails.name": { $regex: search, $options: "i" } },
-      { "userDetails.phoneNumber": { $regex: search, $options: "i" } },
-    ],
-  };
+  const allowedSortFields = ["createdAt", "place", "quantity"];
+  const safeSortField = allowedSortFields.includes(sortField)
+    ? sortField
+    : "createdAt";
 
-  // ------- Fetch paginated list -------
-  const leads = await Lead.aggregate([
+  const matchStage =
+    search && search.trim() !== ""
+      ? {
+          $or: [
+            { place: { $regex: search, $options: "i" } },
+            { "userDetails.name": { $regex: search, $options: "i" } },
+            { "userDetails.phoneNumber": { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+  const pipeline = [
     {
       $lookup: {
         from: "users",
@@ -145,10 +161,14 @@ export const getAdminLeadListService = async (
       },
     },
     { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
-    { $match: filter },
+    { $match: matchStage },
+  ];
+
+  const leads = await Lead.aggregate([
+    ...pipeline,
     {
       $project: {
-        _id: 1,
+        _id: { $toString: "$_id" }, // ✅ FIX
         place: { $ifNull: ["$place", ""] },
         quantity: { $ifNull: ["$quantity", 0] },
         comment: { $ifNull: ["$comment", ""] },
@@ -156,34 +176,24 @@ export const getAdminLeadListService = async (
         createdAt: 1,
         updatedAt: 1,
         userDetails: {
-          _id: 1,
-          name: 1,
-          email: 1,
-          phoneNumber: 1,
+          _id: { $toString: "$userDetails._id" },
+          name: "$userDetails.name",
+          email: "$userDetails.email",
+          phoneNumber: "$userDetails.phoneNumber",
         },
       },
     },
-    { $sort: { [sortField]: sortOrder } },
+    { $sort: { [safeSortField]: sortOrder } },
     { $skip: offset },
     { $limit: limit },
   ]);
 
-  // ------- Total count (with same filters) -------
-  const totalCount = await Lead.aggregate([
-    {
-      $lookup: {
-        from: "users",
-        localField: "user_id",
-        foreignField: "_id",
-        as: "userDetails",
-      },
-    },
-    { $unwind: { path: "$userDetails", preserveNullAndEmptyArrays: true } },
-    { $match: filter },
+  const totalResult = await Lead.aggregate([
+    ...pipeline,
     { $count: "total" },
   ]);
 
-  const totalLeads = totalCount.length ? totalCount[0].total : 0;
+  const totalLeads = totalResult[0]?.total || 0;
 
   return { leads, totalLeads };
 };
@@ -201,9 +211,9 @@ export const getAdminLeadDetailsService = async (leadId: string) => {
     { $match: { _id: new Types.ObjectId(leadId) } },
     {
       $project: {
-        _id: 1,
+        _id: { $toString: "$_id" }, // ✅ FIX
         place: { $ifNull: ["$place", ""] },
-        quantity: { $ifNull: ["$quantity", ""] },
+        quantity: { $ifNull: ["$quantity", 0] }, // ✅ FIX
         comment: { $ifNull: ["$comment", ""] },
         leadId: { $ifNull: ["$leadId", ""] },
         createdAt: 1,
@@ -212,5 +222,5 @@ export const getAdminLeadDetailsService = async (leadId: string) => {
     },
   ]);
 
-  return result.length > 0 ? result[0] : null;
+  return result.length ? result[0] : null;
 };

@@ -5,6 +5,12 @@ import { CartSubType, ICartItem } from "../../types/cart.types";
 import { createEnquiryService } from "../enquiry/enquiry.service";
 import { ICreateEnquiryPayload, IUserContext } from "../../types/enquiry.types";
 import User from "../../models/user/user.model";
+import Lead from "../../models/leads/leads.model";
+import { Consultancy } from "../../models/consultancy/consultancy.model";
+import { OldAcEnquiryDetail } from "../../models/enquiry/oldac.model";
+import Enquiry from "../../models/enquiry/enquiry.model";
+import { Booking } from "../../models/booking/booking.model";
+import Address from "../../models/user/address.model";
 const normalizeServiceType = (
   type?: string,
 ): "Sterilization" | "Repair" | "Installation" => {
@@ -96,11 +102,12 @@ export const addToCartService = async (
   let cart = await Cart.findOne({ userId, isActive: true });
   cart ??= new Cart({ userId: new Types.ObjectId(userId) });
 
-  let findUser = await User.findById(userId)
+  let findUser = await User.findById(userId);
 
   const validSubTypes: CartSubType[] = [
     "INSTALLATION",
     "REPAIR",
+    "STERILIZATION",
     "SERVICE",
     "COMPRESSOR",
     "GAS_CHARGING",
@@ -344,45 +351,181 @@ export const getCartService = async (userId: string) => {
   return cart;
 };
 
-export const convertCartToEnquiryService = async (
-  user: IUserContext,
-  checkoutData: {
+export const checkoutService = async (
+  userId: string,
+  payload: {
     addressId: string;
-    slot: "FIRST_HALF" | "SECOND_HALF" | "FULL_DAY";
-    date: string;
+    slot?: "FIRST_HALF" | "SECOND_HALF" | "FULL_DAY";
+    date?: string;
   },
 ) => {
-  const cart = await Cart.findOne({ userId: user._id, isActive: true });
+  const cart = await Cart.findOne({ userId, isActive: true });
 
-  if (!cart) throw new Error("CART_NOT_FOUND");
-
-  const serviceDetails = [];
-
-  for (const category of cart.services) {
-    for (const item of category.items) {
-      if (!item.serviceId) continue;
-
-      serviceDetails.push({
-        service_id: item.serviceId,
-        quantity: item.quantity,
-        serviceType: normalizeServiceType(item.subType),
-        attributes: item.attributes,
-      });
-    }
+  if (!cart || (!cart.services?.length && !cart.quoteRequests?.length)) {
+    throw new Error("Cart is empty");
   }
 
-  const enquiryPayload: ICreateEnquiryPayload = {
-    addressId: checkoutData.addressId,
-    slot: checkoutData.slot,
-    date: checkoutData.date,
-    subType: "BOOKING",
-    serviceDetails,
+  const bookingItems =
+    cart.services?.flatMap((service) => service.items || []) || [];
+  const quoteItems = cart.quoteRequests.filter(
+    (i: any) => i.type === "QUOTE_REQUEST",
+  );
+
+  const address = await Address.findById(payload.addressId);
+  if (!address) throw new Error("Address not found");
+
+  const addressDetails = {
+    house: address.house,
+    street: address.street,
+    city: address.city,
+    state: address.state,
+    zipcode: address.zipcode,
+    landmark: address.landmark,
+    saveAs: address.saveAs,
   };
 
-  const result = await createEnquiryService(enquiryPayload, user);
+  let result: any = {
+    booking: null,
+    enquiries: [],
+  };
+
+  // =========================
+  // ✅ 1. BOOKING FLOW
+  // =========================
+  if (bookingItems.length) {
+    const bookingEnquiry = await Enquiry.create({
+      user_id: userId,
+      type: "BOOKING",
+      subType: bookingItems[0]?.subType,
+      addressDetails,
+      schedule: {
+        slot: payload.slot,
+        date: payload.date,
+      },
+    });
+
+    const categoryMap = new Map();
+
+    bookingItems.forEach((item: any) => {
+      if (!categoryMap.has(item.category)) {
+        categoryMap.set(item.category, {
+          category: item.category,
+          items: [],
+        });
+      }
+
+      categoryMap.get(item.category).items.push({
+        serviceId: item.serviceId,
+        name: item.name,
+        serviceType: item.serviceType,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        attributes: {
+          type: item.attributes?.categoryType,
+          subType: item.attributes?.subType,
+          variant: item.attributes?.variant,
+        },
+      });
+    });
+
+    const booking = await Booking.create({
+      user_id: userId,
+      bookingId: `BK-${Date.now()}`,
+      services: Array.from(categoryMap.values()),
+      address: addressDetails,
+      slot: payload.slot,
+      date: payload.date,
+      enquiryId: bookingEnquiry._id,
+    });
+
+    bookingEnquiry.bookingId = booking._id;
+    bookingEnquiry.status = "BOOKING_CREATED";
+    await bookingEnquiry.save();
+
+    result.booking = booking;
+    result.enquiries.push(bookingEnquiry);
+  }
+
+  const subTypeMap = new Map<string, any[]>();
+
+  quoteItems.forEach((item: any) => {
+    if (!subTypeMap.has(item.subType)) {
+      subTypeMap.set(item.subType, []);
+    }
+
+    const list = subTypeMap.get(item.subType)!;
+    list.push(item);
+  });
+
+  for (const [subType, items] of subTypeMap.entries()) {
+    const enquiry = await Enquiry.create({
+      user_id: userId,
+      type: "QUOTE_REQUEST",
+      subType,
+      addressDetails,
+      status: "REQUESTED",
+    });
+
+    if (subType === "OLD_AC") {
+      const oldAcDetails = items.map((item: any) => ({
+        brand: item.meta?.brand,
+        model: item.meta?.model,
+        acType: item.meta?.acType,
+        tonnage: item.meta?.tonnage,
+        age: item.meta?.age,
+        condition: item.meta?.condition,
+        technology: item.meta?.technology,
+        photos: item.meta?.photos || [],
+      }));
+
+      await OldAcEnquiryDetail.create({
+        enquiryId: enquiry._id,
+        oldAcDetails,
+      });
+    }
+
+    if (subType === "FREE_CONSULTATION") {
+      const item = items[0];
+
+      await Consultancy.create({
+        user_id: userId,
+        enquiryId: enquiry._id,
+        brandId: item.meta?.brandId,
+        quantity: item.quantity?.toString() || "1",
+        comment: item.meta?.comment,
+        place: item.meta?.place,
+        consultancyId: `CONS-${Date.now()}`,
+        serviceName: item.meta?.serviceName || [],
+        addressDetails,
+        slot: payload.slot,
+        date: payload.date,
+        alternatePhone: item.meta?.alternatePhone,
+      });
+    }
+
+    if (subType === "AMC" || subType === "PURCHASE_LEAD") {
+      const item = items[0];
+
+      await Lead.create({
+        user_id: userId,
+        enquiryId: enquiry._id,
+        leadId: `LEAD-${Date.now()}`,
+        place: item.meta?.place,
+        quantity: item.quantity,
+        comment: item.meta?.comment,
+        username: item.meta?.username,
+        phoneNumber: item.meta?.phoneNumber,
+        address: `${address.street}, ${address.city}`,
+        acDetails: item.meta?.acDetails || [],
+      });
+    }
+
+    result.enquiries.push(enquiry);
+  }
 
   cart.services = [];
   cart.quoteRequests = [];
+  cart.isActive = false;
   await cart.save();
 
   return result;

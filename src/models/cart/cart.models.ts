@@ -17,7 +17,7 @@ const cartItemSchema = new Schema<ICartItem>(
       ],
     },
     serviceId: { type: Schema.Types.ObjectId, ref: "Service" },
-    name: { type: String, required: true, trim: true },
+    name: { type: String, trim: true },
     quantity: { type: Number, default: 1, min: 1 },
     unitPrice: { type: Number, default: 0, min: 0 },
     totalPrice: { type: Number, default: 0, min: 0 },
