@@ -102,7 +102,7 @@ export const addToCartService = async (
   let cart = await Cart.findOne({ userId, isActive: true });
   cart ??= new Cart({ userId: new Types.ObjectId(userId) });
 
-  let findUser = await User.findById(userId);
+  const findUser = await User.findById(userId);
 
   const validSubTypes: CartSubType[] = [
     "INSTALLATION",
@@ -122,55 +122,108 @@ export const addToCartService = async (
   let subType: CartSubType | undefined;
   if (payload.subType) {
     const normalized = payload.subType.trim().toUpperCase();
-    if (!validSubTypes.includes(normalized as CartSubType))
+    if (!validSubTypes.includes(normalized as CartSubType)) {
       throw new Error("Invalid subType");
+    }
     subType = normalized as CartSubType;
   }
 
   const quantity = payload.quantity ?? 1;
-  const unitPrice = payload.type === "BOOKING" ? (payload.unitPrice ?? 0) : 0;
+  const unitPrice =
+    payload.type === "BOOKING" ? (payload.unitPrice ?? 0) : 0;
 
-  const newItem: ICartItem = {
-    type: payload.type,
-    ...(subType && { subType }),
-    ...(payload.type === "BOOKING" && payload.serviceId
-      ? { serviceId: new Types.ObjectId(payload.serviceId) }
-      : {}),
-    name: findUser && findUser.name ? findUser.name : "",
-    quantity,
-    unitPrice,
-    totalPrice: quantity * unitPrice,
-    attributes: {
-      categoryType: payload.attributes.categoryType,
-      ...(payload.attributes.subType && {
-        subType: payload.attributes.subType,
-      }),
-      ...(payload.attributes.variant && {
-        variant: payload.attributes.variant,
-      }),
-    },
-    ...(payload.type === "QUOTE_REQUEST" &&
-      payload.meta && { meta: payload.meta }),
+  const isSameItem = (item: ICartItem) => {
+    return (
+      item.type === payload.type &&
+      String(item.serviceId || "") === String(payload.serviceId || "") &&
+      item.attributes.categoryType === payload.attributes.categoryType &&
+      (item.attributes.subType || "") ===
+        (payload.attributes.subType || "") &&
+      (item.attributes.variant || "") ===
+        (payload.attributes.variant || "")
+    );
   };
 
   if (payload.type === "BOOKING") {
-    // BOOKING → services array
     let categoryIndex = cart.services.findIndex(
       (s) => s.category === payload.category,
     );
+
     if (categoryIndex === -1) {
       cart.services.push({ category: payload.category, items: [] });
       categoryIndex = cart.services.length - 1;
     }
-    cart.services[categoryIndex]!.items.push(newItem);
+
+    const items = cart.services[categoryIndex]!.items;
+
+    const existingItem = items.find(isSameItem);
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+      existingItem.totalPrice = existingItem.quantity * existingItem.unitPrice;
+    } else {
+      const newItem: ICartItem = {
+        type: payload.type,
+        ...(subType && { subType }),
+        ...(payload.serviceId && {
+          serviceId: new Types.ObjectId(payload.serviceId),
+        }),
+        name: findUser?.name || "",
+        quantity,
+        unitPrice,
+        totalPrice: quantity * unitPrice,
+        attributes: {
+          categoryType: payload.attributes.categoryType,
+          ...(payload.attributes.subType && {
+            subType: payload.attributes.subType,
+          }),
+          ...(payload.attributes.variant && {
+            variant: payload.attributes.variant,
+          }),
+        },
+      };
+
+      items.push(newItem);
+    }
   } else {
-    // QUOTE_REQUEST → quoteRequests array
-    cart.quoteRequests.push(newItem);
+    const existingItem = cart.quoteRequests.find((item) =>
+      isSameItem(item),
+    );
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      const newItem: ICartItem = {
+        type: payload.type,
+        ...(subType && { subType }),
+        name: findUser?.name || "",
+        quantity,
+        unitPrice: 0,
+        totalPrice: 0,
+        attributes: {
+          categoryType: payload.attributes.categoryType,
+          ...(payload.attributes.subType && {
+            subType: payload.attributes.subType,
+          }),
+          ...(payload.attributes.variant && {
+            variant: payload.attributes.variant,
+          }),
+        },
+        ...(payload.meta && { meta: payload.meta }),
+      };
+
+      cart.quoteRequests.push(newItem);
+    }
   }
 
-  // Optional fields
-  if (payload.addressId) cart.addressId = new Types.ObjectId(payload.addressId);
-  if (payload.slot) cart.slot = payload.slot;
+  if (payload.addressId) {
+    cart.addressId = new Types.ObjectId(payload.addressId);
+  }
+
+  if (payload.slot) {
+    cart.slot = payload.slot;
+  }
+
   if (payload.date) {
     const d = new Date(payload.date);
     if (!isNaN(d.getTime())) cart.date = d;
@@ -389,9 +442,6 @@ export const checkoutService = async (
     enquiries: [],
   };
 
-  // =========================
-  // ✅ 1. BOOKING FLOW
-  // =========================
   if (bookingItems.length) {
     const bookingEnquiry = await Enquiry.create({
       user_id: userId,
@@ -430,7 +480,7 @@ export const checkoutService = async (
 
     const booking = await Booking.create({
       user_id: userId,
-      bookingId: `BK-${Date.now()}`,
+      bookingId: `ACDOCBK-${Date.now()}`,
       services: Array.from(categoryMap.values()),
       address: addressDetails,
       slot: payload.slot,
